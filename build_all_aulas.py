@@ -5,9 +5,9 @@ with open('extracted_slides.json', 'r', encoding='utf-8') as f:
 
 # Podcasts Script Transcripts by Lesson
 podcasts_scripts = {
-    1: "Olá, bem-vindo ao podcast da Aula 1 de Smart Grids! Sou a Professora Bia. Nesta aula introdutória, exploramos a transição das redes elétricas tradicionais unidirecionais para as Redes Inteligentes (Smart Grids). Discutimos o papel da infraestrutura de medição avançada AMI, os sistemas SCADA e a automação de self-healing para reestabelecer o fornecimento de energia em questão de segundos!",
+    1: "Olá, bem-vindo ao podcast da Aula 1 de Smart Grids! Sou o Professor Helder. Nesta aula introdutória, exploramos a transição das redes elétricas tradicionais unidirecionais para as Redes Inteligentes (Smart Grids). Discutimos o papel da infraestrutura de medição avançada AMI, os sistemas SCADA e a automação de self-healing para reestabelecer o fornecimento de energia em questão de segundos!",
     2: "Olá! Neste episódio do podcast da Aula 2, analisamos os Algoritmos Genéticos (AG). Vimos como os operadores de Seleção por Roleta, Crossover e Mutação evoluem uma população de soluções candidatas para resolver o problema de Alocação Ótima de Unidades de Medição Fasorial (PMUs), garantindo 100% de observabilidade com o menor custo possível.",
-    3: "Bem-vindo ao podcast da Aula 3 sobre Evolução Diferencial! Sou a Professora Bia. Explicamos como a ED utiliza vetores de diferença ponderados pelo fator de escala F e a taxa de recombinação CR para mutar soluções contínuas e aplicar a Seleção Gulosa, otimizando a redução de perdas energéticas com extrema velocidade.",
+    3: "Bem-vindo ao podcast da Aula 3 sobre Evolução Diferencial! Sou o Professor Helder. Explicamos como a ED utiliza vetores de diferença ponderados pelo fator de escala F e a taxa de recombinação CR para mutar soluções contínuas e aplicar a Seleção Gulosa, otimizando a redução de perdas energéticas com extrema velocidade.",
     4: "Olá! No podcast da Aula 4, mergulhamos na Inteligência em Enxame! Estudamos o algoritmo PSO, que imita o vôo de bandos de pássaros, e o algoritmo ACO, baseado no comportamento de formigas reais, aplicados ao roteamento otimizado de dados de telemetria em redes PLC e cabos de fibra óptica OPGW.",
     5: "Bem-vindo ao podcast da Aula 5 sobre Estimação de Estado! Explicamos o algoritmo clássico dos Mínimos Quadrados Ponderados (WLS). Vimos como ele filtra o ruído das medições convencionais e das PMUs, permitindo detectar e rejeitar maus dados (Bad Data) através do teste do Qui-Quadrado.",
     6: "Olá! Neste episódio da Aula 6, discutimos a Operação em Baixa Tensão e a Reconfiguração de Redes de Distribuição. Aprendemos como a alteração do status de chaves seccionadoras e tie-switches permite aliviar sobrecargas e minimizar perdas I²R, respeitando estritamente a restrição de radialidade da rede.",
@@ -755,11 +755,11 @@ body {{ font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); col
     <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
   </div>
 
-  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <!-- 🎙️ PODCAST CARD DO PROF. HELDER -->
   <div class="podcast-card">
     <div class="podcast-header">
       <div class="podcast-title">
-        🎙️ PODCAST DA AULA {num} — PROFESSORA BIA
+        🎙️ PODCAST DA AULA {num} — PROF. HELDER
         <div class="eq-bars">
           <div class="eq-bar" id="eq1"></div>
           <div class="eq-bar" id="eq2"></div>
@@ -881,13 +881,30 @@ function togglePodcastPlay() {{
   }}
 }}
 
+function getMaleVoice() {{
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
+  const ptVoices = voices.filter(v => v.lang.startsWith('pt'));
+  const malePtVoice = ptVoices.find(v => 
+    /male|homem|ricardo|daniel|thiago|helder|felipe|lucas|gustavo|bruno|joao|joão|guilherme|diego|sergio|sérgio/i.test(v.name)
+  );
+  if (malePtVoice) return malePtVoice;
+  if (ptVoices.length > 0) return ptVoices[0];
+  const anyMale = voices.find(v => /male|homem|ricardo|daniel/i.test(v.name));
+  return anyMale || null;
+}}
+
 function startPodcastSpeech() {{
   window.speechSynthesis.cancel();
   const text = document.getElementById('podTranscript').innerText;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'pt-BR';
   u.rate = podSpeedRate;
-  u.pitch = 1.25;
+  u.pitch = 0.95;
+
+  const maleVoice = getMaleVoice();
+  if (maleVoice) u.voice = maleVoice;
 
   u.onstart = () => {{
     isPodcastPlaying = true;

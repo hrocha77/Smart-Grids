@@ -181,11 +181,11 @@ body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); colo
     <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
   </div>
 
-  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <!-- 🎙️ PODCAST CARD DO PROF. HELDER -->
   <div class="podcast-card">
     <div class="podcast-header">
       <div class="podcast-title">
-        🎙️ PODCAST DA AULA 5 — PROFESSORA BIA
+        🎙️ PODCAST DA AULA 5 — PROF. HELDER
         <div class="eq-bars">
           <div class="eq-bar" id="eq1"></div>
           <div class="eq-bar" id="eq2"></div>
@@ -388,13 +388,30 @@ function togglePodcastPlay() {
   }
 }
 
+function getMaleVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
+  const ptVoices = voices.filter(v => v.lang.startsWith('pt'));
+  const malePtVoice = ptVoices.find(v => 
+    /male|homem|ricardo|daniel|thiago|helder|felipe|lucas|gustavo|bruno|joao|joão|guilherme|diego|sergio|sérgio/i.test(v.name)
+  );
+  if (malePtVoice) return malePtVoice;
+  if (ptVoices.length > 0) return ptVoices[0];
+  const anyMale = voices.find(v => /male|homem|ricardo|daniel/i.test(v.name));
+  return anyMale || null;
+}
+
 function startPodcastSpeech() {
   window.speechSynthesis.cancel();
   const text = document.getElementById('podTranscript').innerText;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'pt-BR';
   u.rate = podSpeedRate;
-  u.pitch = 1.25;
+  u.pitch = 0.95;
+
+  const maleVoice = getMaleVoice();
+  if (maleVoice) u.voice = maleVoice;
 
   u.onstart = () => {
     isPodcastPlaying = true;

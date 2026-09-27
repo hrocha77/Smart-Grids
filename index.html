@@ -260,36 +260,36 @@ main { flex: 1; display: flex; flex-direction: column; position: relative; min-h
   </main>
 </div>
 
-<!-- Floating AI Chatbot Widget (Professora Bia com Interação por Voz) -->
+<!-- Floating AI Chatbot Widget (Prof. Helder com Interação por Voz) -->
 <div id="avatar-widget">
   <div id="bia-chat-modal">
     <div class="bia-modal-header">
-      <div class="bia-modal-title">👩‍🏫 PROFESSORA BIA (VOZ & IA)</div>
+      <div class="bia-modal-title">👨‍🏫 PROF. HELDER (VOZ & IA)</div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <button id="btnToggleSound" onclick="toggleBiaAudioMute()" title="Ativar/Mutar Áudio da Professora Bia" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:1.1rem">🔊</button>
-        <button onclick="toggleBiaModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem">✕</button>
+        <button id="btnToggleSound" onclick="toggleHelderAudioMute()" title="Ativar/Mutar Áudio do Prof. Helder" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:1.1rem">🔊</button>
+        <button onclick="toggleHelderModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem">✕</button>
       </div>
     </div>
     
     <div class="chat-history" id="chatHistory">
       <div class="chat-msg bia">
-        Olá! Eu sou a <b>Professora Bia</b>. Nossa interação agora é <b>100% por VOZ ou por TEXTO</b>! 🎙️<br><br>Clique no microfone <b>🎤</b> abaixo para falar comigo ou digite sua pergunta sobre Smart Grids! 🤖🔊
+        Olá! Eu sou o <b>Prof. Dr. Helder Rocha</b>. Nossa interação é <b>100% por VOZ ou por TEXTO</b>! 🎙️<br><br>Clique no microfone <b>🎤</b> abaixo para falar comigo ou digite sua pergunta sobre Smart Grids! 🤖🔊
       </div>
     </div>
 
     <div class="chat-input-row">
-      <button id="btnVoiceRec" class="btn-voice-rec" onclick="toggleVoiceRecognition()" title="Clique para falar com a Professora Bia por Voz">🎤</button>
-      <input type="text" id="chatUserMsg" class="chat-input" placeholder="Escreva ou clique no 🎤 para falar..." onkeydown="if(event.key==='Enter')sendBiaMsg()">
-      <button class="btn-send" onclick="sendBiaMsg()">ENVIAR</button>
+      <button id="btnVoiceRec" class="btn-voice-rec" onclick="toggleVoiceRecognition()" title="Clique para falar com o Prof. Helder por Voz">🎤</button>
+      <input type="text" id="chatUserMsg" class="chat-input" placeholder="Escreva ou clique no 🎤 para falar..." onkeydown="if(event.key==='Enter')sendHelderMsg()">
+      <button class="btn-send" onclick="sendHelderMsg()">ENVIAR</button>
     </div>
   </div>
 
-  <div class="avatar-btn-wrapper" onclick="toggleBiaModal()">
+  <div class="avatar-btn-wrapper" onclick="toggleHelderModal()">
     <div class="avatar-circle">
-      <img src="bia.jpeg" alt="Professora Bia Avatar">
+      <img src="helder.png" alt="Prof. Helder Avatar">
     </div>
     <div class="avatar-text-tag">
-      Professora Bia
+      Prof. Helder
       <span>Chatbot Voz & IA 🎙️</span>
     </div>
   </div>
@@ -465,9 +465,9 @@ window.addEventListener('DOMContentLoaded', () => {
 function openThemeModal() { document.getElementById('themeModal').style.display = 'flex'; }
 function closeThemeModal() { document.getElementById('themeModal').style.display = 'none'; }
 
-// CHATBOT & VOICE INTERACTION LOGIC (PROFESSORA BIA)
+// CHATBOT & VOICE INTERACTION LOGIC (PROF. HELDER)
 let isListening = false;
-let isBiaMuted = false;
+let isHelderMuted = false;
 let recognition = null;
 
 if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -482,7 +482,7 @@ if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
     const btn = document.getElementById('btnVoiceRec');
     const input = document.getElementById('chatUserMsg');
     if (btn) btn.classList.add('listening');
-    if (input) input.placeholder = '🎤 Fale agora, a Professora Bia está ouvindo...';
+    if (input) input.placeholder = '🎤 Fale agora, o Prof. Helder está ouvindo...';
   };
 
   recognition.onresult = (event) => {
@@ -490,7 +490,7 @@ if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
     const input = document.getElementById('chatUserMsg');
     if (input) {
       input.value = transcript;
-      sendBiaMsg();
+      sendHelderMsg();
     }
   };
 
@@ -524,20 +524,20 @@ function toggleVoiceRecognition() {
   }
 }
 
-function toggleBiaAudioMute() {
-  isBiaMuted = !isBiaMuted;
+function toggleHelderAudioMute() {
+  isHelderMuted = !isHelderMuted;
   const btn = document.getElementById('btnToggleSound');
-  if (btn) btn.innerText = isBiaMuted ? '🔇' : '🔊';
-  if (isBiaMuted && 'speechSynthesis' in window) {
+  if (btn) btn.innerText = isHelderMuted ? '🔇' : '🔊';
+  if (isHelderMuted && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
 }
 
-function toggleBiaModal() {
+function toggleHelderModal() {
   document.getElementById('bia-chat-modal').classList.toggle('open');
 }
 
-function sendBiaMsg() {
+function sendHelderMsg() {
   const input = document.getElementById('chatUserMsg');
   const query = input.value.trim();
   if (!query) return;
@@ -552,47 +552,47 @@ function sendBiaMsg() {
 
   const typingDiv = document.createElement('div');
   typingDiv.className = 'chat-msg bia';
-  typingDiv.innerHTML = '<i>Professora Bia está consultando os dados... 🧠🎙️</i>';
+  typingDiv.innerHTML = '<i>Prof. Helder está consultando os dados... 🧠🎙️</i>';
   history.appendChild(typingDiv);
   history.scrollTop = history.scrollHeight;
 
   setTimeout(() => {
-    const responseText = getBiaKnowledgeResponse(query);
+    const responseText = getHelderKnowledgeResponse(query);
     typingDiv.innerHTML = responseText;
     history.scrollTop = history.scrollHeight;
-    speakBiaText(responseText.replace(/<[^>]*>/g, ''));
+    speakHelderText(responseText.replace(/<[^>]*>/g, ''));
   }, 500);
 }
 
-function getFemaleVoice() {
+function getMaleVoice() {
   if (!('speechSynthesis' in window)) return null;
   const voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) return null;
   const ptVoices = voices.filter(v => v.lang.startsWith('pt'));
-  const femalePtVoice = ptVoices.find(v => 
-    /female|mulher|maria|francisca|helena|vitoria|vitória|luciana|fernanda|leticia|letícia|camila|raquel|joana|yolda|google português/i.test(v.name)
+  const malePtVoice = ptVoices.find(v => 
+    /male|homem|ricardo|daniel|thiago|helder|felipe|lucas|gustavo|bruno|joao|joão|guilherme|diego|sergio|sérgio/i.test(v.name)
   );
-  if (femalePtVoice) return femalePtVoice;
+  if (malePtVoice) return malePtVoice;
   if (ptVoices.length > 0) return ptVoices[0];
-  const anyFemale = voices.find(v => /female|mulher|maria|helena|luciana/i.test(v.name));
-  return anyFemale || null;
+  const anyMale = voices.find(v => /male|homem|ricardo|daniel/i.test(v.name));
+  return anyMale || null;
 }
 
-function speakBiaText(text) {
-  if (isBiaMuted || !('speechSynthesis' in window)) return;
+function speakHelderText(text) {
+  if (isHelderMuted || !('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'pt-BR';
   u.rate = 1.1;
-  u.pitch = 1.3;
+  u.pitch = 0.95;
 
-  const femaleVoice = getFemaleVoice();
-  if (femaleVoice) u.voice = femaleVoice;
+  const maleVoice = getMaleVoice();
+  if (maleVoice) u.voice = maleVoice;
 
   window.speechSynthesis.speak(u);
 }
 
-function getBiaKnowledgeResponse(q) {
+function getHelderKnowledgeResponse(q) {
   const text = q.toLowerCase();
   if (text.includes('smart grid') || text.includes('rede inteligente')) {
     return 'Smart Grids são redes elétricas digitais integradas a sistemas de TI e comunicação bidirecional com medição avançada (AMI) e automação self-healing!';
@@ -613,7 +613,7 @@ function getBiaKnowledgeResponse(q) {
   } else if (text.includes('big data') || text.includes('5 v')) {
     return 'Big Data Analytics em Smart Grids lida com os 5 V\'s: Volume, Velocidade, Variedade, Veracidade e Valor no fluxo de medidores inteligentes!';
   } else {
-    return `Excelente pergunta! Na disciplina de Smart Grids do Prof. Helder, abordamos esse tema com inteligência computacional. Você pode ouvir o podcast narrado na aba da aula correspondente!`;
+    return `Excelente pergunta! Na minha disciplina de Smart Grids aqui na UFES, abordamos esse tema com inteligência computacional. Você pode ouvir os podcasts narrados das aulas no portal!`;
   }
 }
 
