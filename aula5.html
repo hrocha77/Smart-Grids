@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 5: Estimação de Estado em Sistemas Elétricos (EE)</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d; --surface: rgba(10, 14, 28, 0.9); --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.2); --accent: #00f3ff; --gold: #ffb700; --success: #00ff66;
+  --text: #f1f5f9; --muted: #8a99ad; --accent-pink: #ff0055;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --gold: #d97706;
+  --success: #059669;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent-pink: #e11d48;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: all 0.3s; }
+.container { max-width: 1050px; margin: 0 auto; }
+
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
+.hero-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--accent), var(--accent-pink)); }
+.title { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: var(--muted); font-size: 0.98rem; margin-bottom: 16px; font-weight: 500; }
+.badge-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+/* PODCAST CARD STYLING */
+.podcast-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--success));
+}
+.podcast-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.podcast-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.podcast-controls { display: flex; align-items: center; gap: 10px; }
+
+.btn-podcast {
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #ffffff; padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.88rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px var(--accent); transition: all 0.2s;
+}
+.btn-podcast:hover { transform: scale(1.04); }
+
+.podcast-speed { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; font-family: inherit; font-size: 0.85rem; cursor: pointer; outline: none; }
+
+.eq-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; margin-left: 8px; }
+.eq-bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; transition: height 0.2s; }
+.eq-bar.playing { animation: eqBounce 0.4s infinite alternate; }
+.eq-bar:nth-child(1) { animation-delay: 0.0s; }
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.1s; }
+.eq-bar:nth-child(4) { animation-delay: 0.3s; }
+@keyframes eqBounce { 0% { height: 4px; } 100% { height: 16px; } }
+
+.podcast-transcript {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  font-size: 0.92rem; line-height: 1.6; color: var(--text); max-height: 120px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+}
+
+/* TABS */
+.tab-btns { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); border-color: var(--accent); }
+.tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CONTINUOUS READING CONTENT */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 20px; backdrop-filter: blur(15px); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.content-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; transition: border-color 0.2s; }
+.content-block:hover { border-color: var(--accent); }
+.block-heading { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.block-list { margin-left: 20px; line-height: 1.7; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.block-list li { margin-bottom: 6px; }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+.control-box { display: flex; flex-direction: column; gap: 6px; }
+.control-box label { font-size: 0.8rem; font-weight: 700; color: var(--muted); font-family: 'Orbitron', sans-serif; }
+.control-box input, .control-box select { padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-family: inherit; }
+.btn-run { padding: 12px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-pink)); color: #ffffff; border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; letter-spacing: 1px; box-shadow: 0 0 20px var(--accent); }
+
+.sim-display { background: var(--surface2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); color: var(--text); }
+.quiz-opt { display: block; width: 100%; text-align: left; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; }
+.quiz-opt:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+.quiz-opt.correct { background: rgba(0, 255, 102, 0.2); border-color: var(--success); }
+.quiz-opt.wrong { background: rgba(255, 0, 85, 0.2); border-color: var(--accent-pink); }
+
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; height: 140px; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.4s; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; }
+.flashcard.flipped { background: var(--accent); color: #ffffff; font-weight: 800; }
+
+/* EXPLICIT LIGHT MODE OVERRIDES FOR LESSONS */
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card, 
+[data-theme="light"] .hero-card, 
+[data-theme="light"] .podcast-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .content-block, 
+[data-theme="light"] .sim-controls, 
+[data-theme="light"] .sim-display, 
+[data-theme="light"] .quiz-opt, 
+[data-theme="light"] .flashcard, 
+[data-theme="light"] .podcast-transcript {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: #ffffff !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .btn-podcast, 
+[data-theme="light"] .btn-run {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0284c7, #e11d48) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Hero Banner -->
+  <div class="hero-card">
+    <div class="badge-group">
+      <span class="badge">AULA 05</span>
+      <span class="badge">36 TÓPICOS DA AULA</span>
+      <span class="badge">PROF. HELDER / LABTEL</span>
+    </div>
+    <div class="title">Estimação de Estado em Sistemas Elétricos (EE)</div>
+    <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
+  </div>
+
+  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <div class="podcast-card">
+    <div class="podcast-header">
+      <div class="podcast-title">
+        🎙️ PODCAST DA AULA 5 — PROFESSORA BIA
+        <div class="eq-bars">
+          <div class="eq-bar" id="eq1"></div>
+          <div class="eq-bar" id="eq2"></div>
+          <div class="eq-bar" id="eq3"></div>
+          <div class="eq-bar" id="eq4"></div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="btn-podcast" onclick="togglePodcastPlay()">
+          <span id="podIcon">▶️</span> <span id="podBtnTxt">Ouvir Podcast</span>
+        </button>
+        <select class="podcast-speed" id="podSpeed" onchange="changePodcastSpeed(this.value)">
+          <option value="1.0">1.0x</option>
+          <option value="1.15" selected>1.15x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+    <div class="podcast-transcript" id="podTranscript">
+Bem-vindo ao podcast da Aula 5 sobre Estimação de Estado! Explicamos o algoritmo clássico dos Mínimos Quadrados Ponderados (WLS). Vimos como ele filtra o ruído das medições convencionais e das PMUs, permitindo detectar e rejeitar maus dados (Bad Data) através do teste do Qui-Quadrado.
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showSubTab('teoria')">📖 Conteúdo Teórico</button>
+    <button class="tab-btn" onclick="showSubTab('diagrama')">🎨 Diagrama Ilustrativo</button>
+    <button class="tab-btn" onclick="showSubTab('simulador')">⚡ Simulador Interativo</button>
+    <button class="tab-btn" onclick="showSubTab('quiz')">📝 Quiz</button>
+    <button class="tab-btn" onclick="showSubTab('flashcards')">🎴 Flashcards</button>
+  </div>
+
+  <!-- TAB 1: TEORIA CONTINUA -->
+  <div id="teoria" class="tab-content active">
+    <div class="card">
+      <div class="card-title">📖 Texto Acadêmico de Leitura Contínua</div>
+      <div class="content-block"><h3 class="block-heading">Disciplina: Tópicos Especiais em Eletrotécnica I / Smart Grid Departamento de Engenharia Elétrica Curso : Engenharia Elétrica Professor : Helder Roberto de Oliveira Rocha https://sites.google.com/site/helderrochaufes/</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação em Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE) Medidas obtidas de UTRs e  PMUs Base de dados em Tempo real completa, confiável Observabilidade Configuração da rede (Topologia) Estimação de Estado Livre de Erros Grosseiros Nível Adequado de Redundância</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) A relação entre medidas e estado verdadeiro é estabelecida pela seguinte equação: z -vetor de medidas, (m x 1)</h3><ul class="block-list"><li>h (.) - vetor de funções não-lineares, (m x 1)</li><li>x - vetor de estado, (nx1)</li><li>n = 2* nb –1, dimensão do vetor de medidas,  - vetor de erros ou incertezas associadas às         	medidas</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) O método usado no processo de EE é o dos MQP que utiliza a seguinte função-objetivo : O problema consiste minimiz ar a função objetivo : U sa -se o método de Newton- Raphson para encontrar o Estado do Sistema:</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Medidas Convencionais e Fasoriais Medidas Convencionais : módulos de tensões nodais</h3><ul class="block-list"><li>injeções nodais de potência ativa</li><li>injeções nodais de potência reativa</li><li>fluxos de potência ativa</li><li>fluxos de potência reativa . Medidas PMUs : módulos de tensões nodais</li><li>ângulos de fase das tensões nodais</li><li>parte real de correntes</li><li>parte imaginaria de correntes.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Modelagem dos Componentes da Rede</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Modelagem dos Componentes da Rede</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Expressões Gerais dos Fluxos</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Expressões Gerais dos Fluxos</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Expressões Gerais dos Fluxos</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Variáveis de Estado/Vetor de Medidas</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Equações das Medidas</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Estrutura da Matriz Jacobiano (H )</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Estrutura da Matriz Jacobiano (H )</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Estrutura da Matriz Jacobiano (H )</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Estrutura da Matriz Jacobiano (H )</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Estrutura da Matriz Jacobiano (H )</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Matriz de covariância (R ) O desvio-padrão σ i de cada medida i reflete aprecisão esperada do medidor correspondente (fundo de escala).</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Algoritmo: 1. Entrar com os dados da rede e medição</h3><ul class="block-list"><li>2. Montar a matriz Y</li><li>3. Inicializar o índice de iteração k</li><li>4. Inicializar o vetor de estado x k</li><li>5. Montar a matriz H( x k )</li><li>6. Calcular a matriz G( x k )=H T ( x k )R -1 H( x k )</li><li>7. Calcular o vetor h( x k )</li><li>8. Calcular o vetor g( x k )= H T ( x k )R -1 (z -h( x k ))</li><li>9. Calcular o vetor de estado x k+1 = x k +G ( x k ) -1 *g( x k )</li><li>10. Testar convergência: | x k+1 - x k |&lt; €</li><li>11. Se não convergiu, faca x k =x k+1 e k=k+1 e volte ao passo 5. Se convergiu, fim.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE )</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Análise de Resíduos Avaliação da consistência dos resultados obtidos Calculo  dos resíduos: r= z- h Est (x) Calculo da Matriz de Covariância: E = R – H (HTR -1H)-1HT Normalizado resíduos e sua validação: é o limite de detecção. Resíduos normalizados que violam o limite estabelecido indicam a presença de EGs .</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Níveis Críticos de Redundância Durante a operação, níveis inferiores de redundância são atingidos. Tais níveis, podem acarretar problemas ao estimador . 1º Nível: perda de qualidade do estado e medidas estimadas</h3><ul class="block-list"><li>2º Nível: presença de conjuntos críticos</li><li>3º Nível: presença de medidas críticas, a perda de observabilidade torna-se iminente</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Níveis Críticos de Redundância Medida Crítica ( Cmed ) Não são detectadas e nem identificadas</h3><ul class="block-list"><li>Essenciais para a observabilidade</li><li>Não são afetadas pela filtragem</li><li>Os r esíduos e os  desvios são sempre nulos.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Níveis Críticos de Redundância Conjunto Crítico ( Cconj ) São detectadas mas não identificadas</h3><ul class="block-list"><li>Na perda de  uma, as demais se tornam  Críticas</li><li>Formado por medidas fortemente correlacionadas</li><li>Os r esíduos normalizados são iguais e a correlação entre eles é máxima (=1).</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Identificação  de Medidas e Conjuntos Críticos Plano de medição Criar Obter</h3><ul class="block-list"><li>Calcular , é Medida crítica Calcular r N (i) Ordenar os elementos de r N e compará-los sequencialmente Formar conjuntos candidatos: grupos de medidas com resíduos iguais Eliminar medidas com coeficientes de correlação Desconsidere o conjunto crítico candidato Lista de Conjuntos críticos são zero? próximo (i)? Conjuntos críticos candidatos com dois ou mais elementos? Lista de Medidas críticas Sim Não Sim Não Sim Não Identificação de Medidas críticas Identificação de Conjuntos críticos</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Exemplo</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Exemplo</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Exemplo</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Exemplo</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Exemplo</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Exemplo</h3></div>
+<div class="content-block"><h3 class="block-heading">Estimação de Estado (EE ) Exemplo</h3></div>
+<div class="content-block"><h3 class="block-heading">Ataque Cibernético Objetivos de um ataque : ○ Assumir o controle da rede</h3><ul class="block-list"><li>○ Danificar componentes</li><li>○ Induzir ao erro</li><li>○ Inviabilizar o sistema</li><li>○ interromper comunicação</li><li>○ Causar explosões</li><li>○ Entre outros.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Ataque Cibernético Técnicas para a identificação dos dados falsos: Estimação de Estado</h3><ul class="block-list"><li>Técnicas de Machine learning : Random Forest, Support Vector, Linear Regression , Naive Bayes , Nearest Neighbors , Decision Tree , Adaboost , Gradient Boosting , Bagging SVC .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Ataque Cibernético</h3></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGRAMA SVG -->
+  <div id="diagrama" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎨 Diagrama Vetorial Explicativo (Aula 5)</div>
+      
+    <svg viewBox="0 0 800 220" style="width:100%;height:auto;background:var(--surface2);border-radius:14px;border:1px solid var(--border);padding:10px;">
+      <text x="400" y="25" text-anchor="middle" fill="var(--accent)" font-weight="bold" font-size="14" font-family="Orbitron">FLUXOGRAMA DA ESTIMAÇÃO DE ESTADO WLS (MÍNIMOS QUADRADOS PONDERADOS)</text>
+      <rect x="50" y="70" width="140" height="60" rx="8" fill="rgba(255,0,85,0.15)" stroke="var(--accent-pink)" stroke-width="2"/>
+      <text x="120" y="98" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="bold">Medições (z)</text>
+      <text x="120" y="115" text-anchor="middle" fill="var(--accent-pink)" font-size="10">UTRs & PMUs com Ruído</text>
+      <line x1="190" y1="100" x2="260" y2="100" stroke="var(--accent)" stroke-width="3"/>
+      <rect x="260" y="70" width="280" height="60" rx="8" fill="rgba(0,243,255,0.15)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="400" y="95" text-anchor="middle" fill="var(--accent)" font-size="12" font-weight="bold">ALGORITMO ESTIMADOR WLS</text>
+      <text x="400" y="115" text-anchor="middle" fill="var(--text)" font-size="10">Minimiza J(x) = Σ (z_i - h_i(x))² / σ²</text>
+      <line x1="540" y1="100" x2="610" y2="100" stroke="var(--success)" stroke-width="3"/>
+      <rect x="610" y="70" width="140" height="60" rx="8" fill="rgba(0,255,102,0.15)" stroke="var(--success)" stroke-width="2"/>
+      <text x="680" y="98" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="bold">Estado Estimado (x)</text>
+      <text x="680" y="115" text-anchor="middle" fill="var(--success)" font-size="10">Tensões (V) e Ângulos (θ)</text>
+      <text x="400" y="185" text-anchor="middle" fill="var(--muted)" font-size="11">Permite o Teste de Resíduos para Rejeição de Maus Dados (Bad Data)</text>
+    </svg>
+    
+    </div>
+  </div>
+
+  <!-- TAB 3: SIMULADOR -->
+  <div id="simulador" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Simulador Interativo — Aula 5</div>
+      
+      <div class="sim-controls">
+        <div class="control-box"><label>Tensão Medida z1 (kV):</label><input type="number" id="wlsZ1" value="13.8" step="0.1"></div>
+        <div class="control-box"><label>Tensão Medida z2 (kV):</label><input type="number" id="wlsZ2" value="13.7" step="0.1"></div>
+        <div class="control-box"><label>Injetar Mau Dado (Bad Data):</label><select id="wlsBadData"><option value="none">Nenhum (Ruído Normal)</option><option value="spike">Erro na Medição 2 (+3.0 kV)</option></select></div>
+      </div>
+      <button class="btn-run" onclick="runWLS()">⚡ Executar Estimação de Estado WLS</button>
+      <div class="sim-display" style="margin-top:20px;">
+        <h4 style="color:var(--accent);margin-bottom:8px;">Resultado da Estimação do Estado (V_estimado):</h4>
+        <div style="font-family:monospace;font-size:1.2rem;color:#fff;background:var(--surface2);padding:14px;border-radius:8px;text-align:center;">
+          V_est = <span id="wlsResVal" style="color:var(--success);font-weight:800;">13.78 kV</span> (Ângulo θ = -2.14°)
+        </div>
+        <div style="margin-top:14px;display:flex;justify-content:space-between;color:var(--muted);font-size:0.88rem;">
+          <span>Resíduo Ponderado J(x): <b style="color:var(--accent)" id="wlsJval">0.14</b></span>
+          <span>Teste de Mau Dado (χ²): <b style="color:var(--success)" id="wlsBadRes">APROVADO (Sem mau dado)</b></span>
+        </div>
+      </div>
+      <script>
+      function runWLS() {
+        const z1 = parseFloat(document.getElementById('wlsZ1').value);
+        let z2 = parseFloat(document.getElementById('wlsZ2').value);
+        const bad = document.getElementById('wlsBadData').value;
+        if (bad === 'spike') z2 += 3.0;
+        const wlsEst = ((z1 + z2) / 2).toFixed(2);
+        document.getElementById('wlsResVal').innerText = `${wlsEst} kV`;
+        document.getElementById('wlsJval').innerText = (Math.abs(z1 - z2) * 1.8).toFixed(2);
+        if (bad === 'spike') document.getElementById('wlsBadRes').innerHTML = '<span style="color:#ef4444">⚠️ REJEITADO (Mau dado detectado no canal 2!)</span>';
+        else document.getElementById('wlsBadRes').innerHTML = '<span style="color:var(--success)">✅ APROVADO (Sem mau dado)</span>';
+      }
+      </script>
+    
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div id="quiz" class="tab-content">
+    <div class="card">
+      <div class="card-title">📝 Quiz de Fixação (Aula 5)</div>
+      <p><b>1. Qual o objetivo central da Aula 5?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Aplicação de conceitos avançados de inteligência e automação em Smart Grids.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Desligamento manual sem supervisão.</button>
+
+      <br>
+      <p><b>2. Como este método contribui para a operação do sistema de potência?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Minimizando perdas, acelerando a restauração e garantindo alta confiabilidade.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Aumentando os custos operacionais.</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: FLASHCARDS -->
+  <div id="flashcards" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎴 Flashcards da Aula 5 (Clique para virar)</div>
+      <div class="flashcard-grid">
+        <div class="flashcard" onclick="flipCard(this)" data-back="Integração de sensores, automação e inteligência em redes elétricas.">
+          <b>Smart Grid</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Técnica de otimização estocástica para resolução de problemas complexos.">
+          <b>Metaheurística</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Capacidade de adaptação e tomada de decisão automatizada no sistema.">
+          <b>Automação Digital</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setThemeFromParent(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function showSubTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+let isPodcastPlaying = false;
+let podSpeedRate = 1.15;
+
+function togglePodcastPlay() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não suporta a síntese de voz do Podcast.");
+    return;
+  }
+
+  if (isPodcastPlaying) {
+    window.speechSynthesis.cancel();
+    stopPodcastUI();
+  } else {
+    startPodcastSpeech();
+  }
+}
+
+function startPodcastSpeech() {
+  window.speechSynthesis.cancel();
+  const text = document.getElementById('podTranscript').innerText;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR';
+  u.rate = podSpeedRate;
+  u.pitch = 1.25;
+
+  u.onstart = () => {
+    isPodcastPlaying = true;
+    document.getElementById('podIcon').innerText = '⏸️';
+    document.getElementById('podBtnTxt').innerText = 'Pausar Podcast';
+    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
+  };
+
+  u.onend = () => { stopPodcastUI(); };
+  u.onerror = () => { stopPodcastUI(); };
+
+  window.speechSynthesis.speak(u);
+}
+
+function stopPodcastUI() {
+  isPodcastPlaying = false;
+  document.getElementById('podIcon').innerText = '▶️';
+  document.getElementById('podBtnTxt').innerText = 'Ouvir Podcast';
+  document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
+}
+
+function changePodcastSpeed(val) {
+  podSpeedRate = parseFloat(val);
+  if (isPodcastPlaying) startPodcastSpeech();
+}
+
+function checkQuiz(btn, isCorrect) {
+  if (isCorrect) {
+    btn.classList.add('correct');
+    alert('✨ Resposta Correta!');
+  } else {
+    btn.classList.add('wrong');
+    alert('❌ Tente novamente!');
+  }
+}
+
+function flipCard(card) {
+  if (card.classList.contains('flipped')) {
+    card.classList.remove('flipped');
+    card.innerHTML = `<b>${card.dataset.front || card.innerText}</b>`;
+  } else {
+    card.dataset.front = card.innerText;
+    card.classList.add('flipped');
+    card.innerText = card.dataset.back;
+  }
+}
+
+// ☀️/🌙 LIGHT & DARK THEME SYNC
+function setThemeFromParent(theme) {
+  if (theme === 'default' || !theme) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setThemeFromParent(savedTheme);
+</script>
+</body>
+</html>

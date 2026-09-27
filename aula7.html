@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 7: Geração Distribuída, Microgrids & VPP</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d; --surface: rgba(10, 14, 28, 0.9); --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.2); --accent: #ffb700; --gold: #ffb700; --success: #00ff66;
+  --text: #f1f5f9; --muted: #8a99ad; --accent-pink: #ff0055;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --gold: #d97706;
+  --success: #059669;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent-pink: #e11d48;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: all 0.3s; }
+.container { max-width: 1050px; margin: 0 auto; }
+
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
+.hero-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--accent), var(--accent-pink)); }
+.title { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: var(--muted); font-size: 0.98rem; margin-bottom: 16px; font-weight: 500; }
+.badge-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+/* PODCAST CARD STYLING */
+.podcast-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--success));
+}
+.podcast-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.podcast-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.podcast-controls { display: flex; align-items: center; gap: 10px; }
+
+.btn-podcast {
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #ffffff; padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.88rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px var(--accent); transition: all 0.2s;
+}
+.btn-podcast:hover { transform: scale(1.04); }
+
+.podcast-speed { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; font-family: inherit; font-size: 0.85rem; cursor: pointer; outline: none; }
+
+.eq-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; margin-left: 8px; }
+.eq-bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; transition: height 0.2s; }
+.eq-bar.playing { animation: eqBounce 0.4s infinite alternate; }
+.eq-bar:nth-child(1) { animation-delay: 0.0s; }
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.1s; }
+.eq-bar:nth-child(4) { animation-delay: 0.3s; }
+@keyframes eqBounce { 0% { height: 4px; } 100% { height: 16px; } }
+
+.podcast-transcript {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  font-size: 0.92rem; line-height: 1.6; color: var(--text); max-height: 120px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+}
+
+/* TABS */
+.tab-btns { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); border-color: var(--accent); }
+.tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CONTINUOUS READING CONTENT */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 20px; backdrop-filter: blur(15px); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.content-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; transition: border-color 0.2s; }
+.content-block:hover { border-color: var(--accent); }
+.block-heading { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.block-list { margin-left: 20px; line-height: 1.7; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.block-list li { margin-bottom: 6px; }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+.control-box { display: flex; flex-direction: column; gap: 6px; }
+.control-box label { font-size: 0.8rem; font-weight: 700; color: var(--muted); font-family: 'Orbitron', sans-serif; }
+.control-box input, .control-box select { padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-family: inherit; }
+.btn-run { padding: 12px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-pink)); color: #ffffff; border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; letter-spacing: 1px; box-shadow: 0 0 20px var(--accent); }
+
+.sim-display { background: var(--surface2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); color: var(--text); }
+.quiz-opt { display: block; width: 100%; text-align: left; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; }
+.quiz-opt:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+.quiz-opt.correct { background: rgba(0, 255, 102, 0.2); border-color: var(--success); }
+.quiz-opt.wrong { background: rgba(255, 0, 85, 0.2); border-color: var(--accent-pink); }
+
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; height: 140px; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.4s; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; }
+.flashcard.flipped { background: var(--accent); color: #ffffff; font-weight: 800; }
+
+/* EXPLICIT LIGHT MODE OVERRIDES FOR LESSONS */
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card, 
+[data-theme="light"] .hero-card, 
+[data-theme="light"] .podcast-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .content-block, 
+[data-theme="light"] .sim-controls, 
+[data-theme="light"] .sim-display, 
+[data-theme="light"] .quiz-opt, 
+[data-theme="light"] .flashcard, 
+[data-theme="light"] .podcast-transcript {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: #ffffff !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .btn-podcast, 
+[data-theme="light"] .btn-run {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0284c7, #e11d48) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Hero Banner -->
+  <div class="hero-card">
+    <div class="badge-group">
+      <span class="badge">AULA 07</span>
+      <span class="badge">30 TÓPICOS DA AULA</span>
+      <span class="badge">PROF. HELDER / LABTEL</span>
+    </div>
+    <div class="title">Geração Distribuída, Microgrids & VPP</div>
+    <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
+  </div>
+
+  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <div class="podcast-card">
+    <div class="podcast-header">
+      <div class="podcast-title">
+        🎙️ PODCAST DA AULA 7 — PROFESSORA BIA
+        <div class="eq-bars">
+          <div class="eq-bar" id="eq1"></div>
+          <div class="eq-bar" id="eq2"></div>
+          <div class="eq-bar" id="eq3"></div>
+          <div class="eq-bar" id="eq4"></div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="btn-podcast" onclick="togglePodcastPlay()">
+          <span id="podIcon">▶️</span> <span id="podBtnTxt">Ouvir Podcast</span>
+        </button>
+        <select class="podcast-speed" id="podSpeed" onchange="changePodcastSpeed(this.value)">
+          <option value="1.0">1.0x</option>
+          <option value="1.15" selected>1.15x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+    <div class="podcast-transcript" id="podTranscript">
+Bem-vindo ao podcast da Aula 7! Abordamos a Geração Distribuída solar e eólica, a operação de Microgrids em modo conectado ou ilhado, e o conceito de Virtual Power Plants (VPPs) agregando pequenos recursos distribuídos via software com suporte da metaheurística VNS.
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showSubTab('teoria')">📖 Conteúdo Teórico</button>
+    <button class="tab-btn" onclick="showSubTab('diagrama')">🎨 Diagrama Ilustrativo</button>
+    <button class="tab-btn" onclick="showSubTab('simulador')">⚡ Simulador Interativo</button>
+    <button class="tab-btn" onclick="showSubTab('quiz')">📝 Quiz</button>
+    <button class="tab-btn" onclick="showSubTab('flashcards')">🎴 Flashcards</button>
+  </div>
+
+  <!-- TAB 1: TEORIA CONTINUA -->
+  <div id="teoria" class="tab-content active">
+    <div class="card">
+      <div class="card-title">📖 Texto Acadêmico de Leitura Contínua</div>
+      <div class="content-block"><h3 class="block-heading">Disciplina: Tópicos Especiais em Eletrotécnica I / Smart Grid Departamento de Engenharia Elétrica Curso : Engenharia Elétrica Professor : Helder Roberto de Oliveira Rocha https://sites.google.com/site/helderrochaufes/</h3></div>
+<div class="content-block"><h3 class="block-heading">Geração Distribuída (GD) GD é uma expressão usada para designar a geração elétrica realizada junto ou próxima dos consumidores independente da potência, tecnologia e fonte de energia. Economiza investimentos em transmissão</h3><ul class="block-list"><li>Reduz as perdas nestes sistemas</li><li>Melhora a estabilidade do serviço de energia elétrica .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Geração Distribuída (GD)</h3></div>
+<div class="content-block"><h3 class="block-heading">Microgrids São sistemas de distribuição de eletricidade que contêm cargas e recursos de energia distribuídos (como geradores distribuídos, dispositivos de armazenamento ou cargas controláveis) Operam de forma controlada e coordenada, quando conectado à rede de energia principal ou isolada. Pode desconectar da rede tradicional e operar de forma autônoma .</h3></div>
+<div class="content-block"><h3 class="block-heading">Microgrids</h3></div>
+<div class="content-block"><h3 class="block-heading">Virtual Power Plants ( VPPs ) É um novo modelo de infraestrutura de energia que consiste na integração de diferentes tipos de GDs controlados por um sistema de gerenciamento de energia (EMS) Virtual. É composta por um controle centralizado de diferentes grupos de GDs ou Microgrids , chamados de clusters. Cada um destes clusters é controlado por uma estação de gerenciamento local (Local Management Station (LMS)).</h3></div>
+<div class="content-block"><h3 class="block-heading">Virtual Power Plants ( VPPs )</h3></div>
+<div class="content-block"><h3 class="block-heading">Virtual Power Plants ( VPPs ) O LMS tem informações sobre os requisitos de energia dos usuários conectados ao seu cluster.</h3></div>
+<div class="content-block"><h3 class="block-heading">Virtual Power Plants ( VPPs ) O EMS recebe as informações de cada LMS e define a entrada ou saída de energia de cada cluster na rede. Com a informação da EMS, o LMS configura o cluster para que ele entre em funcionamento ou fique em standby . O EMS pode priorizar o uso de recursos de energia distribuídos ( DERs ) ao invés do uso de combustíveis fósseis.</h3></div>
+<div class="content-block"><h3 class="block-heading">Virtual Power Plants ( VPPs ) Os benefícios da VPP : Otimização do rendimento de utilização de toda a rede</h3><ul class="block-list"><li>Alta confiabilidade da produção de energia, ao controle total da rede para atingir o principal objetivo da EMS</li><li>Alta velocidade necessária para acompanhar as mudanças rápidas na demanda do sistema e a alta integração dos DERs .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Cloud and Edge Computing in Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Cloud and Edge Computing in Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Energy IoT in Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Cyber Physical System in Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Digital Twins in Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Digital Twins in Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Problema do caixeiro viajante (TSP) O caixeiro deve visitar todas as cidades Passando uma só vez em cada cidade Com o menor custo possível .</h3></div>
+<div class="content-block"><h3 class="block-heading">Problema do caixeiro viajante (TSP) Construção de uma solução .</h3></div>
+<div class="content-block"><h3 class="block-heading">Problema do caixeiro viajante (TSP) Exemplos de vizinhança para o TSP Retira 2 arcos do ciclo</h3></div>
+<div class="content-block"><h3 class="block-heading">Problema do caixeiro viajante (TSP) Exemplos de vizinhança para o TSP Retira 3 arcos do ciclo</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Descent / Search (VND/VNS) Proposto por Mladenovic &amp; Hansen no qual, efetua-se uma sequência de buscas locais e troca-se a estrutura de vizinhança durante a busca.</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Descent (VND) Sejam uma solução inicial x, um conjunto de vizinhanças factíveis N k (x), k = 1, ..., kmax e para cada vizinhança N k (x), disponha de um método de busca local. O VND varia a vizinhança de x na ordem estipulada: N 1 (x), N 2 (x), ... Em uma vizinhança N k (x), se a busca local encontra x’ melhor que x, substituímos x por x’ e voltamos à vizinhança N 1 , Caso contrário, passamos à vizinhança N k+1 (x ).</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Descent (VND) As vizinhanças devem ser ordenadas de modo que primeiras envolvam movimentos mais fáceis, assim o gasto computacional cresce quando mudamos de vizinhança. Em cada vizinhança N k (x), podemos encontrar o melhor ponto, x* ( best improvement ) ou o primeiro ponto x’ tal que f(x’) &lt; f(x) ( first improvement ).</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Descent (VND) 1. Determinar uma solução inicial x</h3><ul class="block-list"><li>2. K ← 1</li><li>3. Enquanto( k ≤ kmax ), 3.1. Encontrar o melhor vizinho x’ ∈ N k (x)</li><li>3.2. Se(f(x’)&lt;f(x)), 3.2.1. então x ← x’</li><li>k ← 1</li><li>3.2.2. senão k ← k+1</li><li>3.3. Fim-Se</li><li>4. Fim-Enquanto</li><li>5. Retornar x</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Search Básico (VNS)</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Search Básico (VNS)</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Search Básico (VNS)</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Search Básico (VNS)</h3></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Search Básico (VNS) 1. Definir um conjunto de kmax vizinhanças. 2. Determinar uma solução inicial x</h3><ul class="block-list"><li>3. Enquanto não é satisfeito um critério de parada, 3.1. k ← 1</li><li>3.2. Enquanto (k ≤ kmax ), 3.2.1. Gerar, aleatoriamente, x’ ∈ N k (x)</li><li>3.2.2. Usando um método de busca local, encontra x’’, mínimo local próximo de  x’. 3.2.3. Se(f(x’’)&lt;f(x)), 3.2.3.1. Então x ← x”</li><li>k ← 1</li><li>3.2.3.2. Senão k ← k+1</li><li>3.2.4. Fim-se</li><li>3.3. Fim-enquanto</li><li>4. Fim-enquanto</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Variable Neighborhood Search Básico (VNS) VNS Geral: Combina o VNS básico com o emprego do VND como algoritmo de busca local. VNS enviesado ( skewedVNS ): Muitas vezes, é necessário explorar vales distantes do ponto atual. Mas gerar pontos aleatórios distantes é o mesmo que adotar recomeços (o que nem sempre é eficiente). Neste caso, adota-se uma regra para aceitar pontos: x” é aceito se f(x”) &lt; f(x) + α ρ (x, x”) onde α &gt; 0 é uma constante e ρ (x, x”) é uma função que mede a distância entre x e x”.</h3></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGRAMA SVG -->
+  <div id="diagrama" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎨 Diagrama Vetorial Explicativo (Aula 7)</div>
+      
+    <svg viewBox="0 0 800 220" style="width:100%;height:auto;background:var(--surface2);border-radius:14px;border:1px solid var(--border);padding:10px;">
+      <text x="400" y="25" text-anchor="middle" fill="var(--gold)" font-weight="bold" font-size="14" font-family="Orbitron">ARQUITETURA DE MICROGRID & USINA VIRTUAL DE ENERGIA (VPP)</text>
+      <rect x="60" y="60" width="120" height="60" rx="8" fill="rgba(255,183,0,0.2)" stroke="var(--gold)" stroke-width="2"/>
+      <text x="120" y="95" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="bold">SOLAR PV</text>
+      <rect x="240" y="60" width="120" height="60" rx="8" fill="rgba(0,255,102,0.2)" stroke="var(--success)" stroke-width="2"/>
+      <text x="300" y="95" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="bold">BATERIA BESS</text>
+      <rect x="420" y="60" width="120" height="60" rx="8" fill="rgba(0,243,255,0.2)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="480" y="95" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="bold">CARGAS / HEMS</text>
+      <rect x="600" y="60" width="140" height="60" rx="8" fill="rgba(157,78,221,0.2)" stroke="var(--accent-purple)" stroke-width="2"/>
+      <text x="670" y="88" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="bold">REDE PRINCIPAL</text>
+      <text x="670" y="105" text-anchor="middle" fill="var(--accent-purple)" font-size="10">Disjuntor de Ilhamento</text>
+      <path d="M 120 120 L 400 170 M 300 120 L 400 170 M 480 120 L 400 170 M 670 120 L 400 170" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4,4"/>
+      <circle cx="400" cy="170" r="22" fill="var(--surface)" stroke="var(--gold)" stroke-width="2"/>
+      <text x="400" y="175" text-anchor="middle" fill="var(--gold)" font-weight="bold" font-size="11">VPP</text>
+      <text x="400" y="210" text-anchor="middle" fill="var(--muted)" font-size="10">O sistema alterna entre modo conectado e ilhado garantindo a resiliência energética</text>
+    </svg>
+    
+    </div>
+  </div>
+
+  <!-- TAB 3: SIMULADOR -->
+  <div id="simulador" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Simulador Interativo — Aula 7</div>
+      
+      <div class="sim-controls">
+        <div class="control-box"><label>Geração Solar PV (kW):</label><input type="number" id="mgSolar" value="50" min="0" max="100" onchange="runMicrogrid()"></div>
+        <div class="control-box"><label>Demanda de Carga (kW):</label><input type="number" id="mgLoad" value="35" min="5" max="100" onchange="runMicrogrid()"></div>
+        <div class="control-box"><label>Modo da Microgrid:</label><select id="mgMode" onchange="runMicrogrid()"><option value="grid">Conectado à Rede</option><option value="island">Modo Ilhado (Islanded)</option></select></div>
+      </div>
+      <button class="btn-run" onclick="runMicrogrid()">⚡ Simular Balanço de Potência</button>
+      <div class="sim-display" style="margin-top:20px;">
+        <h4 style="color:var(--gold);margin-bottom:8px;" id="mgStatus">Status do Despacho: Equilibrado</h4>
+        <div style="display:flex;justify-content:space-around;margin-top:14px;">
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--success)" id="mgBessAction">Carga (+15 kW)</div><div style="font-size:0.78rem;color:var(--muted)">Ação da Bateria BESS</div></div>
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--accent)" id="mgGridFlow">Exportação (0 kW)</div><div style="font-size:0.78rem;color:var(--muted)">Fluxo com a Rede Principal</div></div>
+        </div>
+      </div>
+      <script>
+      function runMicrogrid() {
+        const solar = parseFloat(document.getElementById('mgSolar').value);
+        const load = parseFloat(document.getElementById('mgLoad').value);
+        const mode = document.getElementById('mgMode').value;
+        const diff = solar - load;
+        if (diff > 0) {
+          document.getElementById('mgBessAction').innerText = `Carregando (+${diff} kW)`;
+          document.getElementById('mgGridFlow').innerText = mode === 'grid' ? `Exportando (${(diff*0.4).toFixed(1)} kW)` : 'Isolado (0 kW)';
+          document.getElementById('mgStatus').innerText = '☀️ Excedente Solar Armazenado no BESS';
+        } else {
+          const def = Math.abs(diff);
+          document.getElementById('mgBessAction').innerText = `Descarregando (-${def} kW)`;
+          document.getElementById('mgGridFlow').innerText = mode === 'grid' ? `Importando (${(def*0.5).toFixed(1)} kW)` : 'Isolado (0 kW)';
+          document.getElementById('mgStatus').innerText = '🔋 Suporte da Bateria para Carga';
+        }
+      }
+      runMicrogrid();
+      </script>
+    
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div id="quiz" class="tab-content">
+    <div class="card">
+      <div class="card-title">📝 Quiz de Fixação (Aula 7)</div>
+      <p><b>1. Qual o objetivo central da Aula 7?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Aplicação de conceitos avançados de inteligência e automação em Smart Grids.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Desligamento manual sem supervisão.</button>
+
+      <br>
+      <p><b>2. Como este método contribui para a operação do sistema de potência?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Minimizando perdas, acelerando a restauração e garantindo alta confiabilidade.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Aumentando os custos operacionais.</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: FLASHCARDS -->
+  <div id="flashcards" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎴 Flashcards da Aula 7 (Clique para virar)</div>
+      <div class="flashcard-grid">
+        <div class="flashcard" onclick="flipCard(this)" data-back="Integração de sensores, automação e inteligência em redes elétricas.">
+          <b>Smart Grid</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Técnica de otimização estocástica para resolução de problemas complexos.">
+          <b>Metaheurística</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Capacidade de adaptação e tomada de decisão automatizada no sistema.">
+          <b>Automação Digital</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setThemeFromParent(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function showSubTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+let isPodcastPlaying = false;
+let podSpeedRate = 1.15;
+
+function togglePodcastPlay() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não suporta a síntese de voz do Podcast.");
+    return;
+  }
+
+  if (isPodcastPlaying) {
+    window.speechSynthesis.cancel();
+    stopPodcastUI();
+  } else {
+    startPodcastSpeech();
+  }
+}
+
+function startPodcastSpeech() {
+  window.speechSynthesis.cancel();
+  const text = document.getElementById('podTranscript').innerText;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR';
+  u.rate = podSpeedRate;
+  u.pitch = 1.25;
+
+  u.onstart = () => {
+    isPodcastPlaying = true;
+    document.getElementById('podIcon').innerText = '⏸️';
+    document.getElementById('podBtnTxt').innerText = 'Pausar Podcast';
+    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
+  };
+
+  u.onend = () => { stopPodcastUI(); };
+  u.onerror = () => { stopPodcastUI(); };
+
+  window.speechSynthesis.speak(u);
+}
+
+function stopPodcastUI() {
+  isPodcastPlaying = false;
+  document.getElementById('podIcon').innerText = '▶️';
+  document.getElementById('podBtnTxt').innerText = 'Ouvir Podcast';
+  document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
+}
+
+function changePodcastSpeed(val) {
+  podSpeedRate = parseFloat(val);
+  if (isPodcastPlaying) startPodcastSpeech();
+}
+
+function checkQuiz(btn, isCorrect) {
+  if (isCorrect) {
+    btn.classList.add('correct');
+    alert('✨ Resposta Correta!');
+  } else {
+    btn.classList.add('wrong');
+    alert('❌ Tente novamente!');
+  }
+}
+
+function flipCard(card) {
+  if (card.classList.contains('flipped')) {
+    card.classList.remove('flipped');
+    card.innerHTML = `<b>${card.dataset.front || card.innerText}</b>`;
+  } else {
+    card.dataset.front = card.innerText;
+    card.classList.add('flipped');
+    card.innerText = card.dataset.back;
+  }
+}
+
+// ☀️/🌙 LIGHT & DARK THEME SYNC
+function setThemeFromParent(theme) {
+  if (theme === 'default' || !theme) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setThemeFromParent(savedTheme);
+</script>
+</body>
+</html>

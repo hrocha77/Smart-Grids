@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 9: Redes Neurais Profundas (Deep Learning)</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d; --surface: rgba(10, 14, 28, 0.9); --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.2); --accent: #00f3ff; --gold: #ffb700; --success: #00ff66;
+  --text: #f1f5f9; --muted: #8a99ad; --accent-pink: #ff0055;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --gold: #d97706;
+  --success: #059669;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent-pink: #e11d48;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: all 0.3s; }
+.container { max-width: 1050px; margin: 0 auto; }
+
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
+.hero-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--accent), var(--accent-pink)); }
+.title { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: var(--muted); font-size: 0.98rem; margin-bottom: 16px; font-weight: 500; }
+.badge-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+/* PODCAST CARD STYLING */
+.podcast-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--success));
+}
+.podcast-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.podcast-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.podcast-controls { display: flex; align-items: center; gap: 10px; }
+
+.btn-podcast {
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #ffffff; padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.88rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px var(--accent); transition: all 0.2s;
+}
+.btn-podcast:hover { transform: scale(1.04); }
+
+.podcast-speed { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; font-family: inherit; font-size: 0.85rem; cursor: pointer; outline: none; }
+
+.eq-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; margin-left: 8px; }
+.eq-bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; transition: height 0.2s; }
+.eq-bar.playing { animation: eqBounce 0.4s infinite alternate; }
+.eq-bar:nth-child(1) { animation-delay: 0.0s; }
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.1s; }
+.eq-bar:nth-child(4) { animation-delay: 0.3s; }
+@keyframes eqBounce { 0% { height: 4px; } 100% { height: 16px; } }
+
+.podcast-transcript {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  font-size: 0.92rem; line-height: 1.6; color: var(--text); max-height: 120px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+}
+
+/* TABS */
+.tab-btns { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); border-color: var(--accent); }
+.tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CONTINUOUS READING CONTENT */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 20px; backdrop-filter: blur(15px); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.content-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; transition: border-color 0.2s; }
+.content-block:hover { border-color: var(--accent); }
+.block-heading { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.block-list { margin-left: 20px; line-height: 1.7; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.block-list li { margin-bottom: 6px; }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+.control-box { display: flex; flex-direction: column; gap: 6px; }
+.control-box label { font-size: 0.8rem; font-weight: 700; color: var(--muted); font-family: 'Orbitron', sans-serif; }
+.control-box input, .control-box select { padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-family: inherit; }
+.btn-run { padding: 12px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-pink)); color: #ffffff; border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; letter-spacing: 1px; box-shadow: 0 0 20px var(--accent); }
+
+.sim-display { background: var(--surface2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); color: var(--text); }
+.quiz-opt { display: block; width: 100%; text-align: left; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; }
+.quiz-opt:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+.quiz-opt.correct { background: rgba(0, 255, 102, 0.2); border-color: var(--success); }
+.quiz-opt.wrong { background: rgba(255, 0, 85, 0.2); border-color: var(--accent-pink); }
+
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; height: 140px; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.4s; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; }
+.flashcard.flipped { background: var(--accent); color: #ffffff; font-weight: 800; }
+
+/* EXPLICIT LIGHT MODE OVERRIDES FOR LESSONS */
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card, 
+[data-theme="light"] .hero-card, 
+[data-theme="light"] .podcast-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .content-block, 
+[data-theme="light"] .sim-controls, 
+[data-theme="light"] .sim-display, 
+[data-theme="light"] .quiz-opt, 
+[data-theme="light"] .flashcard, 
+[data-theme="light"] .podcast-transcript {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: #ffffff !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .btn-podcast, 
+[data-theme="light"] .btn-run {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0284c7, #e11d48) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Hero Banner -->
+  <div class="hero-card">
+    <div class="badge-group">
+      <span class="badge">AULA 09</span>
+      <span class="badge">40 TÓPICOS DA AULA</span>
+      <span class="badge">PROF. HELDER / LABTEL</span>
+    </div>
+    <div class="title">Redes Neurais Profundas (Deep Learning)</div>
+    <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
+  </div>
+
+  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <div class="podcast-card">
+    <div class="podcast-header">
+      <div class="podcast-title">
+        🎙️ PODCAST DA AULA 9 — PROFESSORA BIA
+        <div class="eq-bars">
+          <div class="eq-bar" id="eq1"></div>
+          <div class="eq-bar" id="eq2"></div>
+          <div class="eq-bar" id="eq3"></div>
+          <div class="eq-bar" id="eq4"></div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="btn-podcast" onclick="togglePodcastPlay()">
+          <span id="podIcon">▶️</span> <span id="podBtnTxt">Ouvir Podcast</span>
+        </button>
+        <select class="podcast-speed" id="podSpeed" onchange="changePodcastSpeed(this.value)">
+          <option value="1.0">1.0x</option>
+          <option value="1.15" selected>1.15x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+    <div class="podcast-transcript" id="podTranscript">
+Bem-vindo ao podcast da Aula 9 sobre Redes Neurais Profundas! Explicamos a aplicação de arquiteturas LSTM e CNN para extração automática de atributos em séries temporais de consumo elétrico, realizando a previsão de carga a curto prazo (STLF) e a detecção de furtos de energia.
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showSubTab('teoria')">📖 Conteúdo Teórico</button>
+    <button class="tab-btn" onclick="showSubTab('diagrama')">🎨 Diagrama Ilustrativo</button>
+    <button class="tab-btn" onclick="showSubTab('simulador')">⚡ Simulador Interativo</button>
+    <button class="tab-btn" onclick="showSubTab('quiz')">📝 Quiz</button>
+    <button class="tab-btn" onclick="showSubTab('flashcards')">🎴 Flashcards</button>
+  </div>
+
+  <!-- TAB 1: TEORIA CONTINUA -->
+  <div id="teoria" class="tab-content active">
+    <div class="card">
+      <div class="card-title">📖 Texto Acadêmico de Leitura Contínua</div>
+      <div class="content-block"><h3 class="block-heading">Disciplina: Tópicos Especiais em Eletrotécnica I / Smart Grid Departamento de Engenharia Elétrica Curso : Engenharia Elétrica Professor : Helder Roberto de Oliveira Rocha https://sites.google.com/site/helderrochaufes/</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas O que é Aprendizagem de Máquina? É uma técnica que a partir de dados, rotulados ou não, se torna capaz de associar certos padrões e descobertas com intuito de fazer uma previsão, classificação ou regressão. Alta capacidade de aprender a partir de dados. Facilidade em lidar com problemas complexos.</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas No entanto, técnicas convencionais de Aprendizagem de Máquina são restritas a dados com representação mais simples. Além disso, elas necessitam de dados previamente minerados para o processo de classificação.. Esta restrição é superada por meio de técnicas de Deep Learning .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Deep Learning é uma abordagem de redes neurais artificiais (ANN). Redes profundas tem alto nível de abstração e consegue lidar com problemas ainda mais complexos e não-lineares .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Deep Learning tem sido aplicado a uma variedade de problemas em diversas áreas, reconhecimento de imagens, fala e processamento de linguagem natural, etc. Com o avanço no desenvolvimento de hardware, o uso de técnicas de Deep Learning tem crescido exponencialmente desde 2006 .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas A principal técnica é redes neurais convolucionais (CNN). É chamada de convolucional por conta de suas camadas convolucionais que realizam detecção de características locais .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Os principais conceitos por trás de CNNs que as fazem tão bem sucedidas são: Conexões locais. Pesos compartilhados. Pooling . Uso de muitas camadas .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Uma CNN é composta de um conjunto de componentes e funções que operam nos dados e os modificam. Alguns dos principais componentes são: convolação, rectified linear unit ( ReLU ), pooling , dropout e softmax .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Convolução A convolação é um operador linear e o principal operador das CNNs . O objetivo desse operador é gerar um mapa de características.</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Convolução Exemplo de convolução em uma dimensão</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Rectified Linear Unit ( ReLU ) ReLU é o mais simples operador não-linear aplicado após uma filtragem linear. É aplicado a cada pixel do mapa de caracter´ısticas com intuito de retificar valores negativos .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Pooling É uma forma de reduzir as dimensões da entrada através do descarte de informação desnecessária e preservação daquelas mais críticas. Ele opera nos canais de características individuais, combinando os valores mais próximos. Os mais comuns são o max-pooling , que retorna os máximos valores de entrada, e o avg-pooling , que retorna os valores médios de entrada .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Pooling Exemplos aplicando max-pooling e average-pooling com mascara de pooling de dimensão 2 × 2, temos :</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Dropout Foi introduzido com o propósito de evitar over- fit . Ele funciona omitindo metade dos neurônios para cada amostra de treino. Através deste procedimento, cada neurônio tem que trabalhar com uma combinação aleatória de suas entradas. Esta abordagem permite uma melhor generalização para a rede neural .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Dropout</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Camada de Achatamento - Flatten É responsável pelo remodelamento, ou achatamento, dos dados de entrada. Isto acontece a partir do colapso de uma matriz bidimensional de características (que possui mais de uma dimensão espacial) em um vetor que pode ser alimentado em um classificador de rede neural totalmente conectado. Os dados aprendidos nas camadas convolucionais são preparados para serem propagados para as camadas totalmente conectadas .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Esquema de achatamento - Flatten</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Softmax É comumente usada na camada final do classificador. O objetivo é minimizar o erro da função softmax através do ajuste adequado dos pesos dos neurônios da rede neural .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Otimizadores para Treinamento Assim como nas Multilayer Perceptrons , as CNNs são treinadas utilizando Gradiente Descendente (GD) e Backpropagation</h3><ul class="block-list"><li>O objetivo é ajustar os parâmetros (pesos) de forma a diminuir a diferença entre a saída esperada e a saída obtida</li><li>Esta diferença é medida através de uma função de custo.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Funções de custo mais utilizadas para Treinamento Para tarefas de classificação: Softmax Cross Entropy</h3><ul class="block-list"><li>Sigmoid Cross</li><li>Para tarefas de regressão : Mean Squared Error (MSE).</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Otimizadores para Treinamento Variantes do Gradient Descent : ○ Batch Gradient Descent ○ Stochastic Gradient Descent (SGD) ○ Mini-batch Gradient Descent Ajuste automático da taxa de aprendizado: ○ Adaptive Gradient Algorithm (ADAGRAD) ○ ADADELTA ○ Adaptive Moment Estimation (Adam) ○ RMSProp Outros: ○ SGD with Momentum ○ Nesterov Accelerated Gradient (NAG )</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Batches Durante o treinamento, é comum passar um ‘pacote’ de dados para o modelo. Evita a necessidade de realizar o ajuste de pesos a cada novo dado (computacionalmente custoso). Valores típicos para o tamanho do batch:  32 ~ 256 instâncias. Para calcular o custo de um batch, utiliza-se a média dos custos de cada dado dentro do batch .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Batches</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Iterações e épocas de treinamento Iteração: um ajuste de pesos (normalmente no fim de um batch). Época: um ciclo completo no conjunto de treinamento (todos os batches ).</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Como Avaliar um CNN Conjuntos de treinamento, validação e teste ○ Hold -Out ○ K- fold Cross validation Métricas de avaliação: ○ Matriz de confusão ○ True Positive, True Negative, False Positive, False Negative ○ Acurácia, especificidade, sensibilidade Avaliação visual: ○ Comportamento das curvas de erro e custo</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Hold -out e K- fold Cross Validation Hold -out consiste em separar os dados em três conjuntos exclusivos: treinamento, validação e teste. Exemplo: 60%, 20%, 20%. K- fold Cross Validation consiste em criar K partições de treinamento/teste, de forma a obter uma análise estatística mais relevante do erro .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Métricas de avaliação - Matriz de confusão Tabela onde um eixo representa a classe real e o outro representa as classes preditas pelo classificador.</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Métricas de avaliação True positive (TP) , ou verdadeiros positivo: quando o classificador acerta a classe do objeto</h3><ul class="block-list"><li>True negative (TN ), ou verdadeiro negativo: quando o classificador rejeita um objeto corretamente</li><li>False positive (FP), ou falso positivo: quando o classificador erra a classe de um objeto (alarme falso)</li><li>False negative (FN), ou falso negativo: quando o classificador rejeita um objeto erroneamente</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Métricas de avaliação</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Métricas de avaliação ● Acurácia : TP + TN / TP + TN + FP + FN Não é uma boa métrica para datasets desbalanceados ● Sensibilidade: TP / TP + FN ● Especificidade: TN / TN + FP O produto da sensibilidade pela especificidade é uma boa métrica de avaliação para datasets desbalanceados.</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Implementação</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Profundas Implementação</h3></div>
+<div class="content-block"><h3 class="block-heading">Identificação de Cargas Similares</h3></div>
+<div class="content-block"><h3 class="block-heading">Identificação de Cargas Similares</h3></div>
+<div class="content-block"><h3 class="block-heading">Identificação de Cargas Similares</h3></div>
+<div class="content-block"><h3 class="block-heading">Identificação de Cargas Similares</h3></div>
+<div class="content-block"><h3 class="block-heading">Identificação de Cargas Similares</h3></div>
+<div class="content-block"><h3 class="block-heading">Identificação de Cargas Similares</h3></div>
+<div class="content-block"><h3 class="block-heading">Identificação de Cargas Similares</h3></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGRAMA SVG -->
+  <div id="diagrama" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎨 Diagrama Vetorial Explicativo (Aula 9)</div>
+      
+    <svg viewBox="0 0 800 220" style="width:100%;height:auto;background:var(--surface2);border-radius:14px;border:1px solid var(--border);padding:10px;">
+      <text x="400" y="25" text-anchor="middle" fill="var(--accent)" font-weight="bold" font-size="14" font-family="Orbitron">ARQUITETURA DE REDE NEURAL PROFUNDA (LSTM) PARA PREVISÃO DE CARGA</text>
+      <circle cx="120" cy="70" r="14" fill="rgba(0,243,255,0.2)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="120" cy="115" r="14" fill="rgba(0,243,255,0.2)" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="120" cy="160" r="14" fill="rgba(0,243,255,0.2)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="120" y="195" text-anchor="middle" fill="var(--muted)" font-size="11">Entrada (Histórico)</text>
+      <rect x="260" y="55" width="100" height="120" rx="10" fill="rgba(157,78,221,0.2)" stroke="var(--accent-purple)" stroke-width="2"/>
+      <text x="310" y="110" text-anchor="middle" fill="var(--text)" font-weight="bold" font-size="12">CAMADA 1</text>
+      <text x="310" y="130" text-anchor="middle" fill="var(--accent-purple)" font-size="10">128 Células LSTM</text>
+      <rect x="460" y="55" width="100" height="120" rx="10" fill="rgba(255,0,85,0.2)" stroke="var(--accent-pink)" stroke-width="2"/>
+      <text x="510" y="110" text-anchor="middle" fill="var(--text)" font-weight="bold" font-size="12">CAMADA 2</text>
+      <text x="510" y="130" text-anchor="middle" fill="var(--accent-pink)" font-size="10">64 Células LSTM</text>
+      <circle cx="680" cy="115" r="18" fill="rgba(0,255,102,0.2)" stroke="var(--success)" stroke-width="2"/>
+      <text x="680" y="120" text-anchor="middle" fill="var(--success)" font-weight="bold" font-size="12">STLF</text>
+      <text x="680" y="155" text-anchor="middle" fill="var(--success)" font-size="11">Previsão de Carga (kW)</text>
+      <line x1="134" y1="115" x2="260" y2="115" stroke="var(--accent)" stroke-width="2"/>
+      <line x1="360" y1="115" x2="460" y2="115" stroke="var(--accent-purple)" stroke-width="2"/>
+      <line x1="560" y1="115" x2="662" y2="115" stroke="var(--accent-pink)" stroke-width="2"/>
+    </svg>
+    
+    </div>
+  </div>
+
+  <!-- TAB 3: SIMULADOR -->
+  <div id="simulador" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Simulador Interativo — Aula 9</div>
+      
+      <div class="sim-controls">
+        <div class="control-box"><label>Arquitetura da Rede:</label><select id="dlArch"><option value="lstm">LSTM Profunda (2 Camadas 128 Unidades)</option><option value="cnn_lstm">Híbrida CNN-LSTM</option></select></div>
+        <div class="control-box"><label>Número de Épocas:</label><input type="number" id="dlEpochs" value="30" min="5" max="100"></div>
+      </div>
+      <button class="btn-run" onclick="runDL()">⚡ Treinar Rede Neural Profunda</button>
+      <div class="sim-display" style="margin-top:20px;">
+        <h4 style="color:var(--accent);margin-bottom:8px;" id="dlStatus">Status do Treinamento: Não Iniciado</h4>
+        <div style="display:flex;justify-content:space-around;margin-top:14px;">
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--success)" id="dlMse">0.0024</div><div style="font-size:0.78rem;color:var(--muted)">Erro Quadrático Médio (MSE)</div></div>
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--gold)" id="dlAcc">98.6%</div><div style="font-size:0.78rem;color:var(--muted)">Precisão da Previsão</div></div>
+        </div>
+      </div>
+      <script>
+      function runDL() {
+        const epochs = parseInt(document.getElementById('dlEpochs').value);
+        document.getElementById('dlStatus').innerText = `⏳ Treinando em ${epochs} épocas...`;
+        setTimeout(() => {
+          document.getElementById('dlStatus').innerText = `✅ Treinamento Concluído!`;
+          document.getElementById('dlMse').innerText = (0.01 / (epochs * 0.1)).toFixed(4);
+          document.getElementById('dlAcc').innerText = `${(94 + (epochs * 0.08)).toFixed(1)}%`;
+        }, 500);
+      }
+      </script>
+    
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div id="quiz" class="tab-content">
+    <div class="card">
+      <div class="card-title">📝 Quiz de Fixação (Aula 9)</div>
+      <p><b>1. Qual o objetivo central da Aula 9?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Aplicação de conceitos avançados de inteligência e automação em Smart Grids.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Desligamento manual sem supervisão.</button>
+
+      <br>
+      <p><b>2. Como este método contribui para a operação do sistema de potência?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Minimizando perdas, acelerando a restauração e garantindo alta confiabilidade.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Aumentando os custos operacionais.</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: FLASHCARDS -->
+  <div id="flashcards" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎴 Flashcards da Aula 9 (Clique para virar)</div>
+      <div class="flashcard-grid">
+        <div class="flashcard" onclick="flipCard(this)" data-back="Integração de sensores, automação e inteligência em redes elétricas.">
+          <b>Smart Grid</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Técnica de otimização estocástica para resolução de problemas complexos.">
+          <b>Metaheurística</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Capacidade de adaptação e tomada de decisão automatizada no sistema.">
+          <b>Automação Digital</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setThemeFromParent(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function showSubTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+let isPodcastPlaying = false;
+let podSpeedRate = 1.15;
+
+function togglePodcastPlay() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não suporta a síntese de voz do Podcast.");
+    return;
+  }
+
+  if (isPodcastPlaying) {
+    window.speechSynthesis.cancel();
+    stopPodcastUI();
+  } else {
+    startPodcastSpeech();
+  }
+}
+
+function startPodcastSpeech() {
+  window.speechSynthesis.cancel();
+  const text = document.getElementById('podTranscript').innerText;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR';
+  u.rate = podSpeedRate;
+  u.pitch = 1.25;
+
+  u.onstart = () => {
+    isPodcastPlaying = true;
+    document.getElementById('podIcon').innerText = '⏸️';
+    document.getElementById('podBtnTxt').innerText = 'Pausar Podcast';
+    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
+  };
+
+  u.onend = () => { stopPodcastUI(); };
+  u.onerror = () => { stopPodcastUI(); };
+
+  window.speechSynthesis.speak(u);
+}
+
+function stopPodcastUI() {
+  isPodcastPlaying = false;
+  document.getElementById('podIcon').innerText = '▶️';
+  document.getElementById('podBtnTxt').innerText = 'Ouvir Podcast';
+  document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
+}
+
+function changePodcastSpeed(val) {
+  podSpeedRate = parseFloat(val);
+  if (isPodcastPlaying) startPodcastSpeech();
+}
+
+function checkQuiz(btn, isCorrect) {
+  if (isCorrect) {
+    btn.classList.add('correct');
+    alert('✨ Resposta Correta!');
+  } else {
+    btn.classList.add('wrong');
+    alert('❌ Tente novamente!');
+  }
+}
+
+function flipCard(card) {
+  if (card.classList.contains('flipped')) {
+    card.classList.remove('flipped');
+    card.innerHTML = `<b>${card.dataset.front || card.innerText}</b>`;
+  } else {
+    card.dataset.front = card.innerText;
+    card.classList.add('flipped');
+    card.innerText = card.dataset.back;
+  }
+}
+
+// ☀️/🌙 LIGHT & DARK THEME SYNC
+function setThemeFromParent(theme) {
+  if (theme === 'default' || !theme) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setThemeFromParent(savedTheme);
+</script>
+</body>
+</html>

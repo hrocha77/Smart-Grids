@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 1: Introdução a Smart Grids & Conceitos Fundamentais</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d; --surface: rgba(10, 14, 28, 0.9); --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.2); --accent: #00f3ff; --gold: #ffb700; --success: #00ff66;
+  --text: #f1f5f9; --muted: #8a99ad; --accent-pink: #ff0055;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --gold: #d97706;
+  --success: #059669;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent-pink: #e11d48;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: all 0.3s; }
+.container { max-width: 1050px; margin: 0 auto; }
+
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
+.hero-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--accent), var(--accent-pink)); }
+.title { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: var(--muted); font-size: 0.98rem; margin-bottom: 16px; font-weight: 500; }
+.badge-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+/* PODCAST CARD STYLING */
+.podcast-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--success));
+}
+.podcast-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.podcast-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.podcast-controls { display: flex; align-items: center; gap: 10px; }
+
+.btn-podcast {
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #ffffff; padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.88rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px var(--accent); transition: all 0.2s;
+}
+.btn-podcast:hover { transform: scale(1.04); }
+
+.podcast-speed { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; font-family: inherit; font-size: 0.85rem; cursor: pointer; outline: none; }
+
+.eq-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; margin-left: 8px; }
+.eq-bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; transition: height 0.2s; }
+.eq-bar.playing { animation: eqBounce 0.4s infinite alternate; }
+.eq-bar:nth-child(1) { animation-delay: 0.0s; }
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.1s; }
+.eq-bar:nth-child(4) { animation-delay: 0.3s; }
+@keyframes eqBounce { 0% { height: 4px; } 100% { height: 16px; } }
+
+.podcast-transcript {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  font-size: 0.92rem; line-height: 1.6; color: var(--text); max-height: 120px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+}
+
+/* TABS */
+.tab-btns { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); border-color: var(--accent); }
+.tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CONTINUOUS READING CONTENT */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 20px; backdrop-filter: blur(15px); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.content-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; transition: border-color 0.2s; }
+.content-block:hover { border-color: var(--accent); }
+.block-heading { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.block-list { margin-left: 20px; line-height: 1.7; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.block-list li { margin-bottom: 6px; }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+.control-box { display: flex; flex-direction: column; gap: 6px; }
+.control-box label { font-size: 0.8rem; font-weight: 700; color: var(--muted); font-family: 'Orbitron', sans-serif; }
+.control-box input, .control-box select { padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-family: inherit; }
+.btn-run { padding: 12px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-pink)); color: #ffffff; border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; letter-spacing: 1px; box-shadow: 0 0 20px var(--accent); }
+
+.sim-display { background: var(--surface2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); color: var(--text); }
+.quiz-opt { display: block; width: 100%; text-align: left; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; }
+.quiz-opt:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+.quiz-opt.correct { background: rgba(0, 255, 102, 0.2); border-color: var(--success); }
+.quiz-opt.wrong { background: rgba(255, 0, 85, 0.2); border-color: var(--accent-pink); }
+
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; height: 140px; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.4s; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; }
+.flashcard.flipped { background: var(--accent); color: #ffffff; font-weight: 800; }
+
+/* EXPLICIT LIGHT MODE OVERRIDES FOR LESSONS */
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card, 
+[data-theme="light"] .hero-card, 
+[data-theme="light"] .podcast-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .content-block, 
+[data-theme="light"] .sim-controls, 
+[data-theme="light"] .sim-display, 
+[data-theme="light"] .quiz-opt, 
+[data-theme="light"] .flashcard, 
+[data-theme="light"] .podcast-transcript {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: #ffffff !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .btn-podcast, 
+[data-theme="light"] .btn-run {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0284c7, #e11d48) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Hero Banner -->
+  <div class="hero-card">
+    <div class="badge-group">
+      <span class="badge">AULA 01</span>
+      <span class="badge">29 TÓPICOS DA AULA</span>
+      <span class="badge">PROF. HELDER / LABTEL</span>
+    </div>
+    <div class="title">Introdução a Smart Grids & Conceitos Fundamentais</div>
+    <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
+  </div>
+
+  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <div class="podcast-card">
+    <div class="podcast-header">
+      <div class="podcast-title">
+        🎙️ PODCAST DA AULA 1 — PROFESSORA BIA
+        <div class="eq-bars">
+          <div class="eq-bar" id="eq1"></div>
+          <div class="eq-bar" id="eq2"></div>
+          <div class="eq-bar" id="eq3"></div>
+          <div class="eq-bar" id="eq4"></div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="btn-podcast" onclick="togglePodcastPlay()">
+          <span id="podIcon">▶️</span> <span id="podBtnTxt">Ouvir Podcast</span>
+        </button>
+        <select class="podcast-speed" id="podSpeed" onchange="changePodcastSpeed(this.value)">
+          <option value="1.0">1.0x</option>
+          <option value="1.15" selected>1.15x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+    <div class="podcast-transcript" id="podTranscript">
+Olá, bem-vindo ao podcast da Aula 1 de Smart Grids! Sou a Professora Bia. Nesta aula introdutória, exploramos a transição das redes elétricas tradicionais unidirecionais para as Redes Inteligentes (Smart Grids). Discutimos o papel da infraestrutura de medição avançada AMI, os sistemas SCADA e a automação de self-healing para reestabelecer o fornecimento de energia em questão de segundos!
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showSubTab('teoria')">📖 Conteúdo Teórico</button>
+    <button class="tab-btn" onclick="showSubTab('diagrama')">🎨 Diagrama Ilustrativo</button>
+    <button class="tab-btn" onclick="showSubTab('simulador')">⚡ Simulador Interativo</button>
+    <button class="tab-btn" onclick="showSubTab('quiz')">📝 Quiz</button>
+    <button class="tab-btn" onclick="showSubTab('flashcards')">🎴 Flashcards</button>
+  </div>
+
+  <!-- TAB 1: TEORIA CONTINUA -->
+  <div id="teoria" class="tab-content active">
+    <div class="card">
+      <div class="card-title">📖 Texto Acadêmico de Leitura Contínua</div>
+      <div class="content-block"><h3 class="block-heading">Disciplina: Tópicos Especiais em Eletrotécnica I / Smart Grid Departamento de Engenharia Elétrica Curso : Engenharia Elétrica Professor : Helder Roberto de Oliveira Rocha https://sites.google.com/site/helderrochaufes/</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Plano de Ensino Objetivos</h3><ul class="block-list"><li>Ementa</li><li>Conteúdo Programático</li><li>Metodologia</li><li>Avaliação</li><li>Bibliografia</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Objetivos Apresentar os conceitos e procedimentos de modelagem em Smart Grid usando  Inteligência Artificial.</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Conteúdo Parte I: Fundamentos de modelagem de Smart Gid</h3><ul class="block-list"><li>Parte II: Metaheurísticas Simulated Annealing , Busca Tabu, GRASP, Algoritmos Genéticos, Colônias de Formigas, aplicados a problemas de Smart Grid</li><li>Parte III: Redes Neurais aplicados a problemas de Smart Grid .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Metodologia Aulas teóricas apresentando os conceitos básicos sobre a disciplina</h3><ul class="block-list"><li>Aulas práticas de implementação de modelos</li><li>Bibliografia adicional (artigos, revistas )</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Avaliação Avaliação 1 (AV1): Trabalho</h3><ul class="block-list"><li>Avaliação 2 (AV2): Trabalho</li><li>Avaliação 3 (AV3): Prova</li><li>MF=(AV1+AV2+AV3)/ 3</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Temas  do Trabalho Optimization wireless sensors ( LoRa , ZigBee)</h3><ul class="block-list"><li>Planejamento de Redes PON</li><li>Planejamento de sistemas heterogêneos de comunicações para medição em smart grids</li><li>Optimization Model for the Design of Hybrid Renewable Energy Systems</li><li>Optimal Home/Industry Energy Management System</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid São redes elétricas dotadas de: sensores</h3><ul class="block-list"><li>sistemas de comunicação e</li><li>Atuadores/controle, entre seus elementos internos que propiciam o uso otimizado da energia produzida e consumida.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Topologia conceitual de uma rede Smart Grid com infraestrutura de comunicação.</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Grid Usa medição, sensoriamento e Telecomunicação para conceber observabilidade (medição e visualização), controlabilidade (gerenciamento e otimização), automação (adaptação e reconfiguração) e</h3><ul class="block-list"><li>integração (interoperabilidade de diferentes fontes energéticas) à rede elétrica .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter O conceito de SG só é possível mediante um sistema de medição capaz de medir: as tensões e as correntes trifásicas da rede</h3><ul class="block-list"><li>Status dos atuadores (equipamentos de interrupção de energia)</li><li>monitorar em tempo real os principais indicadores de qualidade do produto e serviço .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter Block diagram of a smart meter with GPS</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter Bloco 1: As tensões e as correntes são coletadas por TP’s e TC’s</h3><ul class="block-list"><li>Bloco 2: circuito de adequação e proteção contra sobretensões / correntes</li><li>Bloco 3 : filtro passa-baixas ( evitar o efeito conhecido como aliasing)</li><li>Bloco 4: Conversão do sinal analógico para digital</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter Monofásico Bloco1 - Sensores Hall: É baseada no surgimento de um diferença de potencial trasversal ao fluxo de corrente e um campo magnético perperdicular à corrente .</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter Monofásico Bloco 2 - Condicionamento do sinal de corrente e tensão</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter Monofásico Bloco 3 - Filtro passa-baixas .</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter Monofásico Bloco 4 - Hardware de desenvolvimento e GPS Bloco 5 e 6 – Memória e LCD GPS Hardware da Texas</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Meter Monofásico Bloco 7 – Sistema de comunicação Sistema GSM</h3></div>
+<div class="content-block"><h3 class="block-heading">Phasor Measurement Unit</h3></div>
+<div class="content-block"><h3 class="block-heading">Sistemas de comunicação em SG</h3></div>
+<div class="content-block"><h3 class="block-heading">Sistemas de comunicação em SG</h3></div>
+<div class="content-block"><h3 class="block-heading">Sistemas de comunicação em SG</h3></div>
+<div class="content-block"><h3 class="block-heading">Arquitetura de um EMS A typical SCADA architecture</h3></div>
+<div class="content-block"><h3 class="block-heading">Arquitetura de um EMS Arquitetura do SCADA AREVA EMP do COS/COR 1 da LIGHT</h3></div>
+<div class="content-block"><h3 class="block-heading">Protocolo  para Smart Grid Existe uma quantidade significativa de protocolos para a interligação do SCADA com os dispositivos de campo. As mais utilizadas  são da International Electrotechnical Commission : IEC 61850, IEC 870-5-101, IEC 870-5-104, e a indicação efetuada pela Distributed Network Protocol (DNP) mais usual é o protocolo DNP 3.0 .</h3></div>
+<div class="content-block"><h3 class="block-heading">Protocolo IEC 61850</h3></div>
+<div class="content-block"><h3 class="block-heading">Aplicativos de um EMS WAMS ( Wide Area Measurement System) Sistema de Medição em Grandes Áreas</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de um EMS State Estimation Modulo de Observabilidade : avalia e identifica o número de ilhas Observáveis</h3><ul class="block-list"><li>Configurador da Rede : A configuração de uma rede elétrica consiste, basicamente, na determinação do modelo de ramos/nós do sistema elétrico. SE process : Validação das medidas.</li></ul></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGRAMA SVG -->
+  <div id="diagrama" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎨 Diagrama Vetorial Explicativo (Aula 1)</div>
+      
+    <svg viewBox="0 0 800 240" style="width:100%;height:auto;background:var(--surface2);border-radius:14px;border:1px solid var(--border);padding:10px;">
+      <text x="400" y="25" text-anchor="middle" fill="var(--accent)" font-weight="bold" font-size="14" font-family="Orbitron">ARQUITETURA DA SMART GRID vs. REDE TRADICIONAL</text>
+      <rect x="50" y="60" width="120" height="70" rx="8" fill="rgba(0,243,255,0.15)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="110" y="95" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="bold">SUBESTAÇÃO</text>
+      <text x="110" y="115" text-anchor="middle" fill="var(--gold)" font-size="10">SCADA / Telemetria</text>
+      <line x1="170" y1="95" x2="330" y2="95" stroke="var(--accent)" stroke-width="3" stroke-dasharray="5,5"/>
+      <circle cx="330" cy="95" r="18" fill="var(--surface)" stroke="var(--success)" stroke-width="2"/>
+      <text x="330" y="100" text-anchor="middle" fill="var(--success)" font-size="10" font-weight="bold">CHAVE</text>
+      <line x1="348" y1="95" x2="510" y2="95" stroke="var(--accent)" stroke-width="3"/>
+      <rect x="510" y="60" width="110" height="70" rx="8" fill="rgba(255,183,0,0.15)" stroke="var(--gold)" stroke-width="2"/>
+      <text x="565" y="95" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="bold">MEDIDOR AMI</text>
+      <text x="565" y="115" text-anchor="middle" fill="var(--accent)" font-size="10">Leitura Bidirecional</text>
+      <rect x="670" y="60" width="100" height="70" rx="8" fill="rgba(0,255,102,0.15)" stroke="var(--success)" stroke-width="2"/>
+      <text x="720" y="95" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="bold">SOLAR PV</text>
+      <text x="720" y="115" text-anchor="middle" fill="var(--success)" font-size="10">Geração Distribuída</text>
+      <path d="M 620 85 L 660 85 M 650 80 L 660 85 L 650 90 M 660 105 L 620 105 M 630 100 L 620 105 L 630 110" fill="none" stroke="var(--gold)" stroke-width="2"/>
+      <text x="400" y="185" text-anchor="middle" fill="var(--muted)" font-size="12">Rede Digitalizada com Comunicação Bidirecional em Tempo Real e Self-Healing</text>
+    </svg>
+    
+    </div>
+  </div>
+
+  <!-- TAB 3: SIMULADOR -->
+  <div id="simulador" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Simulador Interativo — Aula 1</div>
+      
+      <div class="sim-controls">
+        <div class="control-box"><label>Carga Total (MW):</label><input type="number" id="simLoad" value="15" min="1" max="50" onchange="runSim1()"></div>
+        <div class="control-box"><label>Densidade AMI (%):</label><input type="range" id="simAmi" value="80" min="0" max="100" oninput="runSim1()"><span id="amiVal" style="color:var(--accent)">80%</span></div>
+        <div class="control-box"><label>Modo de Operação:</label><select id="simMode" onchange="runSim1()"><option value="smart">Smart Grid (Automação & Self-Healing)</option><option value="trad">Rede Tradicional (Manual)</option></select></div>
+      </div>
+      <div class="sim-display">
+        <h3 style="color:var(--accent);margin-bottom:12px;" id="simResTitle">Resultado do Evento de Falta</h3>
+        <p id="simResText">Clique para calcular...</p>
+        <div style="display:flex;justify-content:space-around;margin-top:20px;">
+          <div><div style="font-size:1.8rem;font-weight:800;color:var(--gold)" id="resTime">0.5s</div><div style="font-size:0.78rem;color:var(--muted)">Tempo de Restauração</div></div>
+          <div><div style="font-size:1.8rem;font-weight:800;color:var(--success)" id="resRestored">92%</div><div style="font-size:0.78rem;color:var(--muted)">Clientes Reestabelecidos</div></div>
+        </div>
+      </div>
+      <script>
+      function runSim1() {
+        const load = parseFloat(document.getElementById('simLoad').value);
+        const ami = parseFloat(document.getElementById('simAmi').value);
+        const mode = document.getElementById('simMode').value;
+        document.getElementById('amiVal').innerText = ami + '%';
+        if (mode === 'smart') {
+          document.getElementById('simResTitle').innerText = '⚡ Restauração Automática (Smart Grid)';
+          document.getElementById('simResText').innerText = 'Falta isolada com sucesso! As chaves automáticas religaram o trecho saudável em segundos.';
+          document.getElementById('resTime').innerText = (1.5 - (ami / 200)).toFixed(2) + 's';
+          document.getElementById('resRestored').innerText = Math.round(85 + (ami * 0.14)) + '%';
+        } else {
+          document.getElementById('simResTitle').innerText = '⚠️ Interrupção Manual (Rede Tradicional)';
+          document.getElementById('simResText').innerText = 'Equipe de campo precisa ser deslocada fisicamente até a subestação.';
+          document.getElementById('resTime').innerText = '1h 45min';
+          document.getElementById('resRestored').innerText = '0%';
+        }
+      }
+      runSim1();
+      </script>
+    
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div id="quiz" class="tab-content">
+    <div class="card">
+      <div class="card-title">📝 Quiz de Fixação (Aula 1)</div>
+      <p><b>1. Qual o objetivo central da Aula 1?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Aplicação de conceitos avançados de inteligência e automação em Smart Grids.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Desligamento manual sem supervisão.</button>
+
+      <br>
+      <p><b>2. Como este método contribui para a operação do sistema de potência?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Minimizando perdas, acelerando a restauração e garantindo alta confiabilidade.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Aumentando os custos operacionais.</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: FLASHCARDS -->
+  <div id="flashcards" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎴 Flashcards da Aula 1 (Clique para virar)</div>
+      <div class="flashcard-grid">
+        <div class="flashcard" onclick="flipCard(this)" data-back="Integração de sensores, automação e inteligência em redes elétricas.">
+          <b>Smart Grid</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Técnica de otimização estocástica para resolução de problemas complexos.">
+          <b>Metaheurística</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Capacidade de adaptação e tomada de decisão automatizada no sistema.">
+          <b>Automação Digital</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setThemeFromParent(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function showSubTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+let isPodcastPlaying = false;
+let podSpeedRate = 1.15;
+
+function togglePodcastPlay() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não suporta a síntese de voz do Podcast.");
+    return;
+  }
+
+  if (isPodcastPlaying) {
+    window.speechSynthesis.cancel();
+    stopPodcastUI();
+  } else {
+    startPodcastSpeech();
+  }
+}
+
+function startPodcastSpeech() {
+  window.speechSynthesis.cancel();
+  const text = document.getElementById('podTranscript').innerText;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR';
+  u.rate = podSpeedRate;
+  u.pitch = 1.25;
+
+  u.onstart = () => {
+    isPodcastPlaying = true;
+    document.getElementById('podIcon').innerText = '⏸️';
+    document.getElementById('podBtnTxt').innerText = 'Pausar Podcast';
+    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
+  };
+
+  u.onend = () => { stopPodcastUI(); };
+  u.onerror = () => { stopPodcastUI(); };
+
+  window.speechSynthesis.speak(u);
+}
+
+function stopPodcastUI() {
+  isPodcastPlaying = false;
+  document.getElementById('podIcon').innerText = '▶️';
+  document.getElementById('podBtnTxt').innerText = 'Ouvir Podcast';
+  document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
+}
+
+function changePodcastSpeed(val) {
+  podSpeedRate = parseFloat(val);
+  if (isPodcastPlaying) startPodcastSpeech();
+}
+
+function checkQuiz(btn, isCorrect) {
+  if (isCorrect) {
+    btn.classList.add('correct');
+    alert('✨ Resposta Correta!');
+  } else {
+    btn.classList.add('wrong');
+    alert('❌ Tente novamente!');
+  }
+}
+
+function flipCard(card) {
+  if (card.classList.contains('flipped')) {
+    card.classList.remove('flipped');
+    card.innerHTML = `<b>${card.dataset.front || card.innerText}</b>`;
+  } else {
+    card.dataset.front = card.innerText;
+    card.classList.add('flipped');
+    card.innerText = card.dataset.back;
+  }
+}
+
+// ☀️/🌙 LIGHT & DARK THEME SYNC
+function setThemeFromParent(theme) {
+  if (theme === 'default' || !theme) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setThemeFromParent(savedTheme);
+</script>
+</body>
+</html>

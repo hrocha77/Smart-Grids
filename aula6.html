@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 6: Operação BT & Reconfiguração de Redes (RS)</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d; --surface: rgba(10, 14, 28, 0.9); --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.2); --accent: #ff0055; --gold: #ffb700; --success: #00ff66;
+  --text: #f1f5f9; --muted: #8a99ad; --accent-pink: #ff0055;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --gold: #d97706;
+  --success: #059669;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent-pink: #e11d48;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: all 0.3s; }
+.container { max-width: 1050px; margin: 0 auto; }
+
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
+.hero-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--accent), var(--accent-pink)); }
+.title { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: var(--muted); font-size: 0.98rem; margin-bottom: 16px; font-weight: 500; }
+.badge-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+/* PODCAST CARD STYLING */
+.podcast-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--success));
+}
+.podcast-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.podcast-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.podcast-controls { display: flex; align-items: center; gap: 10px; }
+
+.btn-podcast {
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #ffffff; padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.88rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px var(--accent); transition: all 0.2s;
+}
+.btn-podcast:hover { transform: scale(1.04); }
+
+.podcast-speed { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; font-family: inherit; font-size: 0.85rem; cursor: pointer; outline: none; }
+
+.eq-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; margin-left: 8px; }
+.eq-bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; transition: height 0.2s; }
+.eq-bar.playing { animation: eqBounce 0.4s infinite alternate; }
+.eq-bar:nth-child(1) { animation-delay: 0.0s; }
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.1s; }
+.eq-bar:nth-child(4) { animation-delay: 0.3s; }
+@keyframes eqBounce { 0% { height: 4px; } 100% { height: 16px; } }
+
+.podcast-transcript {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  font-size: 0.92rem; line-height: 1.6; color: var(--text); max-height: 120px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+}
+
+/* TABS */
+.tab-btns { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); border-color: var(--accent); }
+.tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CONTINUOUS READING CONTENT */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 20px; backdrop-filter: blur(15px); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.content-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; transition: border-color 0.2s; }
+.content-block:hover { border-color: var(--accent); }
+.block-heading { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.block-list { margin-left: 20px; line-height: 1.7; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.block-list li { margin-bottom: 6px; }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+.control-box { display: flex; flex-direction: column; gap: 6px; }
+.control-box label { font-size: 0.8rem; font-weight: 700; color: var(--muted); font-family: 'Orbitron', sans-serif; }
+.control-box input, .control-box select { padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-family: inherit; }
+.btn-run { padding: 12px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-pink)); color: #ffffff; border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; letter-spacing: 1px; box-shadow: 0 0 20px var(--accent); }
+
+.sim-display { background: var(--surface2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); color: var(--text); }
+.quiz-opt { display: block; width: 100%; text-align: left; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; }
+.quiz-opt:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+.quiz-opt.correct { background: rgba(0, 255, 102, 0.2); border-color: var(--success); }
+.quiz-opt.wrong { background: rgba(255, 0, 85, 0.2); border-color: var(--accent-pink); }
+
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; height: 140px; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.4s; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; }
+.flashcard.flipped { background: var(--accent); color: #ffffff; font-weight: 800; }
+
+/* EXPLICIT LIGHT MODE OVERRIDES FOR LESSONS */
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card, 
+[data-theme="light"] .hero-card, 
+[data-theme="light"] .podcast-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .content-block, 
+[data-theme="light"] .sim-controls, 
+[data-theme="light"] .sim-display, 
+[data-theme="light"] .quiz-opt, 
+[data-theme="light"] .flashcard, 
+[data-theme="light"] .podcast-transcript {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: #ffffff !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .btn-podcast, 
+[data-theme="light"] .btn-run {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0284c7, #e11d48) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Hero Banner -->
+  <div class="hero-card">
+    <div class="badge-group">
+      <span class="badge">AULA 06</span>
+      <span class="badge">39 TÓPICOS DA AULA</span>
+      <span class="badge">PROF. HELDER / LABTEL</span>
+    </div>
+    <div class="title">Operação BT & Reconfiguração de Redes (RS)</div>
+    <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
+  </div>
+
+  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <div class="podcast-card">
+    <div class="podcast-header">
+      <div class="podcast-title">
+        🎙️ PODCAST DA AULA 6 — PROFESSORA BIA
+        <div class="eq-bars">
+          <div class="eq-bar" id="eq1"></div>
+          <div class="eq-bar" id="eq2"></div>
+          <div class="eq-bar" id="eq3"></div>
+          <div class="eq-bar" id="eq4"></div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="btn-podcast" onclick="togglePodcastPlay()">
+          <span id="podIcon">▶️</span> <span id="podBtnTxt">Ouvir Podcast</span>
+        </button>
+        <select class="podcast-speed" id="podSpeed" onchange="changePodcastSpeed(this.value)">
+          <option value="1.0">1.0x</option>
+          <option value="1.15" selected>1.15x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+    <div class="podcast-transcript" id="podTranscript">
+Olá! Neste episódio da Aula 6, discutimos a Operação em Baixa Tensão e a Reconfiguração de Redes de Distribuição. Aprendemos como a alteração do status de chaves seccionadoras e tie-switches permite aliviar sobrecargas e minimizar perdas I²R, respeitando estritamente a restrição de radialidade da rede.
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showSubTab('teoria')">📖 Conteúdo Teórico</button>
+    <button class="tab-btn" onclick="showSubTab('diagrama')">🎨 Diagrama Ilustrativo</button>
+    <button class="tab-btn" onclick="showSubTab('simulador')">⚡ Simulador Interativo</button>
+    <button class="tab-btn" onclick="showSubTab('quiz')">📝 Quiz</button>
+    <button class="tab-btn" onclick="showSubTab('flashcards')">🎴 Flashcards</button>
+  </div>
+
+  <!-- TAB 1: TEORIA CONTINUA -->
+  <div id="teoria" class="tab-content active">
+    <div class="card">
+      <div class="card-title">📖 Texto Acadêmico de Leitura Contínua</div>
+      <div class="content-block"><h3 class="block-heading">Disciplina: Tópicos Especiais em Eletrotécnica I / Smart Grid Departamento de Engenharia Elétrica Curso : Engenharia Elétrica Professor : Helder Roberto de Oliveira Rocha https://sites.google.com/site/helderrochaufes/</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação em Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Sistema de Supervisão e Aquisição da Telemetria (SCADA) Responsável pelo monitoramento do sistema em tempo real: Tensões</h3><ul class="block-list"><li>Injeções de energia nos barramentos</li><li>Fluxos nas linhas</li><li>Status de chaves/disjuntores</li><li>Operação em Smart Grid</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Configurador de Rede Definição da topologia da rede com base nas informações de campo (Status de chaves e disjuntores )</h3><ul class="block-list"><li>Operação em Smart Grid</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Implementação de Estimadores de Estado Robustos Operação em Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Sistema Automático de Restauração de Rede Operação em Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Analise de Contingências Operação em Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Analise de Contingências Operação em Smart Grid</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Previsão de carga Operação em tempo real: Intervalos de 15 min</h3><ul class="block-list"><li>Controle automático da geração</li><li>Planejamento da operação: Previsões horárias até uma semana à frente</li><li>Programação da geração</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Programação da geração: Comissionamento de unidades térmicas Determinar a combinação de unidades e o quanto alocar de potência a cada uma delas de forma a minimizar o custo total de operação durante um determinado intervalo de tempo , considerando: Custo e tempo de partida e religamento</h3><ul class="block-list"><li>Custo e tempo de desligamento</li><li>Restrições contratuais</li><li>Reservas girantes</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Programação da geração: Coordenação hidrotérmica Dadas NH usinas hidrelétricas e NT usinas térmicas, quanto alocar de potência a cada usina de forma a minimizar o custo de operação total ao longo do horizonte de estudo, considerando</h3><ul class="block-list"><li>Restrições de uso múltiplo da água</li><li>Valor futuro da água</li><li>Limites mínimos de reservatórios</li><li>Equilíbrio do uso dos recursos entre os períodos úmidos e secos.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Despacho econômico Estratégia de operação do sistema visando garantir o fornecimento seguro de energia elétrica a custo mínimo</h3><ul class="block-list"><li>Segurança Análise de contingências</li><li>Fluxo de potência ótimo considerando segurança</li><li>Economia Planejamento da geração</li><li>Comissionamento de unidades geradoras</li><li>Coordenação hidrotérmica</li><li>Despacho econômico</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Planejamento da Expansão da Rede Elétrica Objetivos: Indicar onde deverão ser alocados novos equipamentos para que o sistema opere de forma adequada, que obedeça às restrições operacionais e financeiras para um determinado cenário futuro. Transmissão</h3><ul class="block-list"><li>Distribuição</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Alocação de Geração Distribuída Objetivos: Definir a localização ótima para instalação de centrais geradoras distribuídas no sistema e a quantidade de potência que deverá ser injetada por estas centrais, de modo a: Aumentar a Capacidade de Energia da Rede</h3><ul class="block-list"><li>Reduzir Perdas Elétricas</li><li>Controlar o Níveis de Tensão</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Alocação de Geração Distribuída</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Alocação de Geração Distribuída</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Modelo do Gerador Eólico</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Modelo do PV</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Alocação de Capacitores em  Redes Elétricas Objetivos: Controle de Potência Reativa</h3><ul class="block-list"><li>Capacidade de Fornecimento</li><li>Redução de Perdas Elétricas</li><li>Controle do Níveis de Tensão</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Alocação de Capacitores em  Redes Elétricas</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Alocação de Capacitores em  Redes Elétricas Função Objetivo: Níveis de Tensão (Res. 505/01 ANEEL) Energia Recuperada Custo de Investimento em Banco de Capacitores</h3></div>
+<div class="content-block"><h3 class="block-heading">Recozimento Simulado S. Kirkpatrick, D.C. Gellat , and M.P. Vecchi . Optimization by Simulated Annealing. Science, 220:671680, 1983 . Inspirado no processo de recozimento, onde os matérias resfriados lentamente, atingem o estado mínimo de energia interna.</h3></div>
+<div class="content-block"><h3 class="block-heading">Recozimento Simulado Características : Método pouco inteligente</h3><ul class="block-list"><li>Admite soluções ruins de acordo com uma        probabilidade que diminua ao longo processo</li><li>Pequeno esforço computacional</li><li>Convergência garantida</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Recozimento Simulado Após uma perturbação na solução corrente i , a probabilidade de aceitar a nova solução j é dada por : 1, se Ej ≤ Ei exp (-( Ej - Ei )/ Tk ),   se Ej &gt; Ei onde : Ej e Ei são os valores das energias associadas às soluções i e j, respectivamente . Tk é o parâmetro que representa a temperatura atual .</h3></div>
+<div class="content-block"><h3 class="block-heading">Recozimento Simulado No inicio da busca, a temperatura Tk é alta. Todo movimento é aceito. Durante a busca a temperatura T é reduzida. No fim da busca, a temperatura Tk é baixa e apenas movimentos de descida são aceitos. O decaimento da temperatura deve ser lento para encontrar boas soluções. A probabilidade de aceitar uma nova solução é maior para pequenos acréscimos no valor da função de energia E;</h3></div>
+<div class="content-block"><h3 class="block-heading">Recozimento Simulado Definir : Tmin , Δ T e NR Inicializar T Enquanto (T &gt; Tmin )  faça Para i = 1,NR  faça Gerar uma solução Sj a partir de Si Calcular a variação de energia ( Δ E = Ej – Ei) Se ( Δ E ≤ 0) então (Si = Sj ) Senão Gerar um número aleatório α no intervalo [0,1] Se ( α &lt; exp (- Δ E/T) então (Si = Sj ) Fim Se Fim Para T = T + Δ T Fim Enquanto</h3></div>
+<div class="content-block"><h3 class="block-heading">Recozimento Simulado</h3></div>
+<div class="content-block"><h3 class="block-heading">Busca Tabu Origem Glover , F. (1986) “Future paths for integer programming and links to artificial intelligence ”, Computers &amp; Operations Research , Vol. 13, pp . Inspira-se no conceito de Tabu, ou  seja proibição à movimentos de busca realizados recentemente . Ou seja ,  é registrado apenas alguns atributos das soluções visitadas .</h3></div>
+<div class="content-block"><h3 class="block-heading">Busca Tabu Características: Método inteligente pelo uso da lista tabu</h3><ul class="block-list"><li>Requer grande esforço computacional</li><li>Facilidade no ajuste dos parâmetros</li><li>Pode ser combinada com outros métodos</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Busca Tabu Conceito de Lista Tabu: Proibição à movimentos de busca realizados (alguns atributos) recentemente Critérios de Aspiração: A aspiração é satisfeita se o movimento leva uma solução melhor que todas as outras que já foram obtidas</h3></div>
+<div class="content-block"><h3 class="block-heading">Busca Tabu</h3></div>
+<div class="content-block"><h3 class="block-heading">Busca Tabu</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Alocação de Capacitores em  Redes Elétricas Função Objetivo: Níveis de Tensão (Res. 505/01 ANEEL) Energia Recuperada Custo de Investimento em Banco de Capacitores</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Modelagem Computacional do Problema (Codificação estendida)</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Modelagem Computacional do Problema (Codificação  reduzida)</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Metaheurística RS BT AG N o de Bancos Capacitores 5 5 4 Pot . Total Instalada ( kvar ) 2.100 1.500 1.500 Recuperação da Receita (R$) 26.442,24 26.966,38 25.802,19 Investimento (R$) 21.517,00 20.395,00 16.877,00 Lucro Anual (R$) 4.925,24 6.571,38 8.925,19</h3></div>
+<div class="content-block"><h3 class="block-heading">Operação de Sistemas de Potência Sistema Automático de Restauração de Rede</h3></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGRAMA SVG -->
+  <div id="diagrama" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎨 Diagrama Vetorial Explicativo (Aula 6)</div>
+      
+    <svg viewBox="0 0 800 220" style="width:100%;height:auto;background:var(--surface2);border-radius:14px;border:1px solid var(--border);padding:10px;">
+      <text x="400" y="25" text-anchor="middle" fill="var(--accent-pink)" font-weight="bold" font-size="14" font-family="Orbitron">RECONFIGURAÇÃO DE REDE DE DISTRIBUIÇÃO (TIE-SWITCHES & RADIALIDADE)</text>
+      <rect x="60" y="60" width="100" height="50" rx="6" fill="rgba(0,243,255,0.2)" stroke="var(--accent)"/>
+      <text x="110" y="90" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="bold">Alimentador A</text>
+      <line x1="160" y1="85" x2="350" y2="85" stroke="var(--accent)" stroke-width="3"/>
+      <circle cx="250" cy="85" r="10" fill="var(--success)"/>
+      <text x="250" y="110" text-anchor="middle" fill="var(--success)" font-size="10">NC (Fechada)</text>
+      <circle cx="400" cy="85" r="14" fill="var(--surface)" stroke="var(--accent-pink)" stroke-width="3"/>
+      <text x="400" y="90" text-anchor="middle" fill="var(--accent-pink)" font-size="10" font-weight="bold">S1</text>
+      <text x="400" y="115" text-anchor="middle" fill="var(--accent-pink)" font-size="10">NO (Tie-Switch)</text>
+      <line x1="450" y1="85" x2="640" y2="85" stroke="var(--gold)" stroke-width="3"/>
+      <circle cx="550" cy="85" r="10" fill="var(--success)"/>
+      <text x="550" y="110" text-anchor="middle" fill="var(--success)" font-size="10">NC (Fechada)</text>
+      <rect x="640" y="60" width="100" height="50" rx="6" fill="rgba(255,183,0,0.2)" stroke="var(--gold)"/>
+      <text x="690" y="90" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="bold">Alimentador B</text>
+      <text x="400" y="185" text-anchor="middle" fill="var(--muted)" font-size="11">Abertura e fechamento coordenados garantem a redução de perdas I²R mantendo a estrutura radial</text>
+    </svg>
+    
+    </div>
+  </div>
+
+  <!-- TAB 3: SIMULADOR -->
+  <div id="simulador" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Simulador Interativo — Aula 6</div>
+      
+      <div class="sim-controls">
+        <div class="control-box"><label>Chave Tie-Switch (S1):</label><select id="rsS1"><option value="open">Aberta (NO - Padrão)</option><option value="closed">Fechada (NC)</option></select></div>
+        <div class="control-box"><label>Chave Seccionadora A (S2):</label><select id="rsS2"><option value="closed">Fechada (NC)</option><option value="open">Aberta (NO)</option></select></div>
+        <div class="control-box"><label>Chave Seccionadora B (S3):</label><select id="rsS3"><option value="closed">Fechada (NC)</option><option value="open">Aberta (NO)</option></select></div>
+      </div>
+      <button class="btn-run" onclick="runRS()">⚡ Reconfigurar Topologia & Calcular Perdas</button>
+      <div class="sim-display" style="margin-top:20px;">
+        <h4 style="color:var(--accent-pink);margin-bottom:8px;" id="rsStatus">Status da Topologia: Radial Válida</h4>
+        <div style="display:flex;justify-content:space-around;margin-top:14px;">
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--gold)" id="rsLoss">320 kW</div><div style="font-size:0.78rem;color:var(--muted)">Perdas Elétricas (I²R)</div></div>
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--success)" id="rsRadial">VÁLIDA</div><div style="font-size:0.78rem;color:var(--muted)">Radialidade da Rede</div></div>
+        </div>
+      </div>
+      <script>
+      function runRS() {
+        const s1 = document.getElementById('rsS1').value;
+        const s2 = document.getElementById('rsS2').value;
+        const s3 = document.getElementById('rsS3').value;
+        if (s1 === 'closed' && s2 === 'closed' && s3 === 'closed') {
+          document.getElementById('rsStatus').innerText = '⚠️ VIOLAÇÃO: LAÇO FECHADO DE CORRENTE!';
+          document.getElementById('rsRadial').innerHTML = '<span style="color:#ef4444">INVÁLIDA (MALHA)</span>';
+          document.getElementById('rsLoss').innerText = '0 kW (Disjuntor Atuado)';
+          return;
+        }
+        if (s1 === 'closed' && s2 === 'open' && s3 === 'closed') {
+          document.getElementById('rsStatus').innerText = '⚡ Topologia Otimizada Encontrada!';
+          document.getElementById('rsRadial').innerHTML = '<span style="color:var(--success)">VÁLIDA</span>';
+          document.getElementById('rsLoss').innerText = '210 kW (-34% de Perdas)';
+          return;
+        }
+        document.getElementById('rsStatus').innerText = 'Topologia Radial Convencional Mantida';
+        document.getElementById('rsRadial').innerHTML = '<span style="color:var(--success)">VÁLIDA</span>';
+        document.getElementById('rsLoss').innerText = '320 kW';
+      }
+      </script>
+    
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div id="quiz" class="tab-content">
+    <div class="card">
+      <div class="card-title">📝 Quiz de Fixação (Aula 6)</div>
+      <p><b>1. Qual o objetivo central da Aula 6?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Aplicação de conceitos avançados de inteligência e automação em Smart Grids.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Desligamento manual sem supervisão.</button>
+
+      <br>
+      <p><b>2. Como este método contribui para a operação do sistema de potência?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Minimizando perdas, acelerando a restauração e garantindo alta confiabilidade.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Aumentando os custos operacionais.</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: FLASHCARDS -->
+  <div id="flashcards" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎴 Flashcards da Aula 6 (Clique para virar)</div>
+      <div class="flashcard-grid">
+        <div class="flashcard" onclick="flipCard(this)" data-back="Integração de sensores, automação e inteligência em redes elétricas.">
+          <b>Smart Grid</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Técnica de otimização estocástica para resolução de problemas complexos.">
+          <b>Metaheurística</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Capacidade de adaptação e tomada de decisão automatizada no sistema.">
+          <b>Automação Digital</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setThemeFromParent(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function showSubTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+let isPodcastPlaying = false;
+let podSpeedRate = 1.15;
+
+function togglePodcastPlay() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não suporta a síntese de voz do Podcast.");
+    return;
+  }
+
+  if (isPodcastPlaying) {
+    window.speechSynthesis.cancel();
+    stopPodcastUI();
+  } else {
+    startPodcastSpeech();
+  }
+}
+
+function startPodcastSpeech() {
+  window.speechSynthesis.cancel();
+  const text = document.getElementById('podTranscript').innerText;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR';
+  u.rate = podSpeedRate;
+  u.pitch = 1.25;
+
+  u.onstart = () => {
+    isPodcastPlaying = true;
+    document.getElementById('podIcon').innerText = '⏸️';
+    document.getElementById('podBtnTxt').innerText = 'Pausar Podcast';
+    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
+  };
+
+  u.onend = () => { stopPodcastUI(); };
+  u.onerror = () => { stopPodcastUI(); };
+
+  window.speechSynthesis.speak(u);
+}
+
+function stopPodcastUI() {
+  isPodcastPlaying = false;
+  document.getElementById('podIcon').innerText = '▶️';
+  document.getElementById('podBtnTxt').innerText = 'Ouvir Podcast';
+  document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
+}
+
+function changePodcastSpeed(val) {
+  podSpeedRate = parseFloat(val);
+  if (isPodcastPlaying) startPodcastSpeech();
+}
+
+function checkQuiz(btn, isCorrect) {
+  if (isCorrect) {
+    btn.classList.add('correct');
+    alert('✨ Resposta Correta!');
+  } else {
+    btn.classList.add('wrong');
+    alert('❌ Tente novamente!');
+  }
+}
+
+function flipCard(card) {
+  if (card.classList.contains('flipped')) {
+    card.classList.remove('flipped');
+    card.innerHTML = `<b>${card.dataset.front || card.innerText}</b>`;
+  } else {
+    card.dataset.front = card.innerText;
+    card.classList.add('flipped');
+    card.innerText = card.dataset.back;
+  }
+}
+
+// ☀️/🌙 LIGHT & DARK THEME SYNC
+function setThemeFromParent(theme) {
+  if (theme === 'default' || !theme) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setThemeFromParent(savedTheme);
+</script>
+</body>
+</html>

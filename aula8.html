@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 8: Smart Home, Redes Neurais & NSGA-II</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d; --surface: rgba(10, 14, 28, 0.9); --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.2); --accent: #ff0055; --gold: #ffb700; --success: #00ff66;
+  --text: #f1f5f9; --muted: #8a99ad; --accent-pink: #ff0055;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --gold: #d97706;
+  --success: #059669;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent-pink: #e11d48;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: all 0.3s; }
+.container { max-width: 1050px; margin: 0 auto; }
+
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
+.hero-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--accent), var(--accent-pink)); }
+.title { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: var(--muted); font-size: 0.98rem; margin-bottom: 16px; font-weight: 500; }
+.badge-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+/* PODCAST CARD STYLING */
+.podcast-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--success));
+}
+.podcast-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.podcast-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.podcast-controls { display: flex; align-items: center; gap: 10px; }
+
+.btn-podcast {
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #ffffff; padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.88rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px var(--accent); transition: all 0.2s;
+}
+.btn-podcast:hover { transform: scale(1.04); }
+
+.podcast-speed { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; font-family: inherit; font-size: 0.85rem; cursor: pointer; outline: none; }
+
+.eq-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; margin-left: 8px; }
+.eq-bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; transition: height 0.2s; }
+.eq-bar.playing { animation: eqBounce 0.4s infinite alternate; }
+.eq-bar:nth-child(1) { animation-delay: 0.0s; }
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.1s; }
+.eq-bar:nth-child(4) { animation-delay: 0.3s; }
+@keyframes eqBounce { 0% { height: 4px; } 100% { height: 16px; } }
+
+.podcast-transcript {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  font-size: 0.92rem; line-height: 1.6; color: var(--text); max-height: 120px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+}
+
+/* TABS */
+.tab-btns { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); border-color: var(--accent); }
+.tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CONTINUOUS READING CONTENT */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 20px; backdrop-filter: blur(15px); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.content-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; transition: border-color 0.2s; }
+.content-block:hover { border-color: var(--accent); }
+.block-heading { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.block-list { margin-left: 20px; line-height: 1.7; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.block-list li { margin-bottom: 6px; }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+.control-box { display: flex; flex-direction: column; gap: 6px; }
+.control-box label { font-size: 0.8rem; font-weight: 700; color: var(--muted); font-family: 'Orbitron', sans-serif; }
+.control-box input, .control-box select { padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-family: inherit; }
+.btn-run { padding: 12px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-pink)); color: #ffffff; border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; letter-spacing: 1px; box-shadow: 0 0 20px var(--accent); }
+
+.sim-display { background: var(--surface2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); color: var(--text); }
+.quiz-opt { display: block; width: 100%; text-align: left; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; }
+.quiz-opt:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+.quiz-opt.correct { background: rgba(0, 255, 102, 0.2); border-color: var(--success); }
+.quiz-opt.wrong { background: rgba(255, 0, 85, 0.2); border-color: var(--accent-pink); }
+
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; height: 140px; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.4s; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; }
+.flashcard.flipped { background: var(--accent); color: #ffffff; font-weight: 800; }
+
+/* EXPLICIT LIGHT MODE OVERRIDES FOR LESSONS */
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card, 
+[data-theme="light"] .hero-card, 
+[data-theme="light"] .podcast-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .content-block, 
+[data-theme="light"] .sim-controls, 
+[data-theme="light"] .sim-display, 
+[data-theme="light"] .quiz-opt, 
+[data-theme="light"] .flashcard, 
+[data-theme="light"] .podcast-transcript {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: #ffffff !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .btn-podcast, 
+[data-theme="light"] .btn-run {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0284c7, #e11d48) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Hero Banner -->
+  <div class="hero-card">
+    <div class="badge-group">
+      <span class="badge">AULA 08</span>
+      <span class="badge">61 TÓPICOS DA AULA</span>
+      <span class="badge">PROF. HELDER / LABTEL</span>
+    </div>
+    <div class="title">Smart Home, Redes Neurais & NSGA-II</div>
+    <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
+  </div>
+
+  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <div class="podcast-card">
+    <div class="podcast-header">
+      <div class="podcast-title">
+        🎙️ PODCAST DA AULA 8 — PROFESSORA BIA
+        <div class="eq-bars">
+          <div class="eq-bar" id="eq1"></div>
+          <div class="eq-bar" id="eq2"></div>
+          <div class="eq-bar" id="eq3"></div>
+          <div class="eq-bar" id="eq4"></div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="btn-podcast" onclick="togglePodcastPlay()">
+          <span id="podIcon">▶️</span> <span id="podBtnTxt">Ouvir Podcast</span>
+        </button>
+        <select class="podcast-speed" id="podSpeed" onchange="changePodcastSpeed(this.value)">
+          <option value="1.0">1.0x</option>
+          <option value="1.15" selected>1.15x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+    <div class="podcast-transcript" id="podTranscript">
+Olá! No podcast da Aula 8, apresentamos os sistemas HEMS para Smart Homes! Discutimos a otimização multi-objetivo com o algoritmo NSGA-II, gerando a Fronteira de Pareto para equilibrar de forma ótima a redução do custo da conta de luz e o conforto térmico do usuário.
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showSubTab('teoria')">📖 Conteúdo Teórico</button>
+    <button class="tab-btn" onclick="showSubTab('diagrama')">🎨 Diagrama Ilustrativo</button>
+    <button class="tab-btn" onclick="showSubTab('simulador')">⚡ Simulador Interativo</button>
+    <button class="tab-btn" onclick="showSubTab('quiz')">📝 Quiz</button>
+    <button class="tab-btn" onclick="showSubTab('flashcards')">🎴 Flashcards</button>
+  </div>
+
+  <!-- TAB 1: TEORIA CONTINUA -->
+  <div id="teoria" class="tab-content active">
+    <div class="card">
+      <div class="card-title">📖 Texto Acadêmico de Leitura Contínua</div>
+      <div class="content-block"><h3 class="block-heading">Disciplina: Tópicos Especiais em Eletrotécnica I / Smart Grid Departamento de Engenharia Elétrica Curso : Engenharia Elétrica Professor : Helder Roberto de Oliveira Rocha https://sites.google.com/site/helderrochaufes/</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Sistema de Gerenciamento e Controle de Curva de Demanda de um Smart Home</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Curva de Demanda</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Preço da Energia</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Preço da Energia</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Geração Distribuída (GD )</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Previsão de Demanda da GD Potência de pico total de 2,56 kW, sendo 1 kW relativo da turbina eólica e 1,56 kW relativo de um arranjo de 6 painéis fotovoltaicos. As variáveis de entrada para a rede neural ELM são: • Data</h3><ul class="block-list"><li>• Dia</li><li>• Hora (UTC)</li><li>• Temperatura média ( ºC )</li><li>• Umidade Relativa média (%)</li><li>• Pressão média ( hPa )</li><li>• Velocidade do vento (m/s)</li><li>• Direção do vento</li><li>• Rajada do vento (m/s)</li><li>• Radiação (kW/m2).</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Previsão de Demanda da GD A saída da RNA é a potência da GD para o dia seguinte .</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Geração da Matriz de Conforto</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Geração da Matriz de Conforto</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Geração da Matriz de Conforto</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Formulação do problema</h3></div>
+<div class="content-block"><h3 class="block-heading">NSGAII Dominância e Frente de Pareto</h3></div>
+<div class="content-block"><h3 class="block-heading">NSGAII</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Equipamentos</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Resultados</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Resultados com Conforto Máximo</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Resultados com Conforto Máximo</h3></div>
+<div class="content-block"><h3 class="block-heading">Smart Homes Resultados com Conforto Médio</h3></div>
+<div class="content-block"><h3 class="block-heading">Gerenciamento da Demanda Industrial</h3></div>
+<div class="content-block"><h3 class="block-heading">Gerenciamento da Demanda Industrial</h3></div>
+<div class="content-block"><h3 class="block-heading">Gerenciamento da Demanda Industrial</h3></div>
+<div class="content-block"><h3 class="block-heading">Gerenciamento da Demanda Industrial</h3></div>
+<div class="content-block"><h3 class="block-heading">Gerenciamento da Demanda Industrial</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs )</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Técnica inspirada no funcionamento do cérebro, onde neurônios artificiais, conectados em rede, são capazes de aprender e de generalizar.</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Resolve problemas no qual exista incerteza sobre um dado fenômeno</h3><ul class="block-list"><li>É usado para: Classificação Regressão Análise de Agrupamentos (clusters ).</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Classificação É a atribuição de casos ou instâncias de dados a uma ou mais possíveis classes. Regressão É a estimativa do valor de uma variável  baseada em exemplos .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Evolução  das RNAs 1940-1950: início das Redes neurais com McCulloch e Pitts . 1950-1960: Perceptron de aprendizado supervisionado. 1960-1970: Pouco avanço. 1980-2000: Redes simétricas e Backpropagation . 2006-20XX : Redes  Neurais Profundas.</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs )</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Resumo do funcionamento Apresentação de um conjunto de valores que representam as variáveis de entrada do neurônio</h3><ul class="block-list"><li>Multiplicação de cada entrada do neurônio pelo seu respectivo peso sináptico Obtenção do potencial de ativação produzido pela soma ponderada dos sinais de entrada, subtraindo-se o limiar de ativação Aplicação de uma função de ativação apropriada, tendo-se como objetivo limitar a saída do neurônio Compilação da saída a partir da aplicação da função de ativação neural em relação ao seu potencial de ativação .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs )</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Funções de ativação</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Arquitetura Define a forma como os seus diversos neurônios estão arranjados, ou dispostos, uns em relação aos outros. Os arranjos são estruturados através do  racionamento do fluxo sináptico. Disposição de seus neurônios</h3><ul class="block-list"><li>Formas de interligação entre os neurônios</li><li>Constituição de suas camadas.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Arquitetura Arquitetura feedforward (alimentação à frente)</h3><ul class="block-list"><li>Arquitetura recorrente</li><li>Arquitetura reticulada .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Arquitetura feedforward com Camada simples Constituída de uma camada de entrada e única camada de neurônios, que é a própria saída. Fluxo de informações segue numa única direção. Ex : Perceptron , Adaline . Aplicações : classificação de padrões, filtragem linear. .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Arquitetura feedforward com Camadas múltiplas Quantidade de camadas escondidas e de neurônios dependem, do tipo e complexidade do problema. Aplicações : aproximação de funções, classificação de padrões, controle de processos, otimização, etc. .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Arquitetura recorrente ( Ex : Hopfield ) Saídas dos neurônios são realimentadas como sinais de entrada para outros neurônios. • Realimentação as qualificam para processamento dinâmico de informações. • Aplicação em  previsão, otimização, controle, etc .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Arquitetura reticulada ( Ex : Kohonen ) Levam em consideração a forma em que a disposição espacial dos neurônios está organizada. • Visa propósitos de extração de características. • Aplicações: problemas de agrupamento, classificação de padrões, otimização, etc .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Topologia Define as diferentes formas de composições estruturais que uma rede pode assumir, dada uma determinada arquitetura. Processo de treinamento Consiste na aplicação de um conjunto de passos ordenados com o intuito de ajustar os pesos e os limiares de seus neurônios. Objetivo final: generalização de soluções (as quais não eram conhecidas ).</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Processo de treinamento</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Tipos de treinamento Treinamento supervisionado</h3><ul class="block-list"><li>Cada amostra de treinamento é então composta pelos sinais de entradas e suas correspondentes saídas. Comporta como se houvesse um “professor” ensinando para a rede qual seria a resposta correta para cada amostra apresentada.</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Tipos de treinamento Treinamento supervisionado Apresente uma amostra de treinamento. Calcule a saída produzida pela rede. Compare com a saída desejada. Se estiver dentro de valores aceitáveis termine o processo de aprendizado, senão ajuste os pesos sinápticos e limiares dos neurônios e volte ao passo 1 .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Treinamento com o algoritmo backpropagation O backpropagation é indiscutivelmente o algoritmo mais importante na história das redes neurais. O passo para frente ( forward pass ), as entradas são passadas através da rede e as previsões de saída obtidas . 2. O passo para trás ( backward pass ), onde calcula o gradiente da função de perda na camada final da rede e usa esse gradiente para aplicar recursivamente a regra da cadeia ( chain rule ) para atualizar os pesos da rede ( retro-propagação ).</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs )</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Tipos de treinamento Treinamento não-supervisionado Diferentemente do supervisionado, as respectivas saídas desejadas são inexistentes. A rede deve se auto-organizar em relação às particularidades existentes entre os elementos do conjunto total de amostras, identificado subconjuntos (clusters) que contenham similaridades.</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Tipos de treinamento Treinamento não-supervisionado Passos do treinamento não supervisionado: 1. Apresente todas as amostras de treinamento. 2. Obtenha as características que marcam as amostras de treinamento. 3. Agrupe todas as amostras com características em comum. 4. Coloque as amostras comuns em classes .</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Exemplo: XOR</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Exemplo: XOR</h3></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Exemplo: XOR % XOR input for x1 and x2 input = [0 0</h3><ul class="block-list"><li>0 1</li><li>1 0</li><li>1 1]</li><li>% Desired output of XOR output = [0</li><li>1</li><li>1</li><li>0]</li><li>% Initialize the bias bias = [-1 -1 -1]</li><li>% Learning coefficient coeff = 0.7</li><li>% Number of learning iterations iterations = 10000</li><li>% Calculate weights randomly using seed. rand(&#x27; state&#x27;,sum (100*clock))</li><li>weights = -1 +2.*rand(3,3)</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Exemplo: XOR for i = 1:iterations out = zeros(4,1)</h3><ul class="block-list"><li>numIn = length (input(:,1))</li><li>for j = 1:numIn % Hidden layer H1 = bias(1,1) * weights (1,1)  + input(j,1) * weights (1,2) +  input(j,2) * weights (1,3)</li><li>% Send data through sigmoid function 1/1+e^-x % Note that sigma is a different m file % that I created to run this operation x2(1) = sigma(H1)</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Exemplo: XOR H2 = bias(1,2)* weights (2,1) + input(j,1)* weights (2,2) 	+ input 	(j,2) * weights (2,3)</h3><ul class="block-list"><li>x2(2 ) = sigma(H2)</li><li>% Output layer x3_1 = bias(1,3)* weights (3,1) + x2(1)* weights (3,2) + x2(2 )* weights (3,3)</li><li>out(j ) = sigma(x3_1)</li><li>% For output layer : % delta( wi ) = xi*delta, % delta = (1- actual output)* ( desired output - actual output) delta3_1 = out(j)*(1-out(j))*(output(j)-out(j))</li><li>% Propagate the delta backwards into hidden layers delta2_1 = x2(1)*(1-x2(1))* weights (3,2)*delta3_1</li><li>delta2_2 = x2(2)*(1-x2(2))* weights (3,3)*delta3_1</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs ) Exemplo: XOR % Add weight changes to original weights and use the new weights to repeat process . % delta weight = coeff *x*delta for k = 1:3 if k == 1 % Bias cases weights (1,k ) = weights (1,k) + coeff *bias(1,1)*delta2_1</h3><ul class="block-list"><li>weights (2,k) = weights (2,k) + coeff *bias(1,2)*delta2_2</li><li>weights (3,k) = weights (3,k) + coeff *bias(1,3)*delta3_1</li><li>else % When k=2 or 3 input cases to neurons weights (1,k) = weights (1,k) + coeff *input(j,1)*delta2_1</li><li>weights (2,k) = weights (2,k) + coeff *input(j,2)*delta2_2</li><li>weights (3,k) = weights (3,k) + coeff *x2(k-1)*delta3_1</li><li>end end end end</li></ul></div>
+<div class="content-block"><h3 class="block-heading">Redes Neurais Artificiais ( RNAs )</h3></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGRAMA SVG -->
+  <div id="diagrama" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎨 Diagrama Vetorial Explicativo (Aula 8)</div>
+      
+    <svg viewBox="0 0 800 220" style="width:100%;height:auto;background:var(--surface2);border-radius:14px;border:1px solid var(--border);padding:10px;">
+      <text x="400" y="25" text-anchor="middle" fill="var(--accent-pink)" font-weight="bold" font-size="14" font-family="Orbitron">FRONTEIRA DE PARETO MULTI-OBJETIVO (HEMS + NSGA-II)</text>
+      <line x1="100" y1="170" x2="700" y2="170" stroke="var(--muted)" stroke-width="2"/>
+      <text x="400" y="200" text-anchor="middle" fill="var(--muted)" font-size="11">Objetivo 1: Custo da Energia Elétrica (R$)</text>
+      <line x1="100" y1="170" x2="100" y2="50" stroke="var(--muted)" stroke-width="2"/>
+      <text x="45" y="110" text-anchor="middle" fill="var(--muted)" font-size="11" transform="rotate(-90 45 110)">Objetivo 2: Desconforto</text>
+      <path d="M 140 60 Q 200 150 650 160" stroke="var(--accent-pink)" stroke-width="4" fill="none"/>
+      <circle cx="160" cy="72" r="7" fill="var(--gold)"/>
+      <text x="210" y="70" fill="var(--gold)" font-size="10" font-weight="bold">Conforto Máximo (Custo Alto)</text>
+      <circle cx="340" cy="142" r="7" fill="var(--accent)"/>
+      <text x="360" y="130" fill="var(--accent)" font-size="10" font-weight="bold">Ponto de Equilíbrio HEMS</text>
+      <circle cx="600" cy="158" r="7" fill="var(--success)"/>
+      <text x="600" y="145" fill="var(--success)" font-size="10" font-weight="bold">Economia Máxima</text>
+      <text x="500" y="75" fill="var(--muted)" font-size="11">Soluções Não-Dominadas (NSGA-II)</text>
+    </svg>
+    
+    </div>
+  </div>
+
+  <!-- TAB 3: SIMULADOR -->
+  <div id="simulador" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Simulador Interativo — Aula 8</div>
+      
+      <div class="sim-controls">
+        <div class="control-box"><label>Perfil de Preferência:</label><select id="hemsPref" onchange="runHems()"><option value="bal">Equilibrado (Custo Médio / Conforto Médio)</option><option value="eco">Economia Máxima (Tarifa Branca Baixa)</option><option value="comf">Conforto Máximo</option></select></div>
+      </div>
+      <button class="btn-run" onclick="runHems()">⚡ Gerar Soluções da Fronteira de Pareto</button>
+      <div class="sim-display" style="margin-top:20px;">
+        <h4 style="color:var(--accent-pink);margin-bottom:8px;">Ponto Selecionado na Fronteira de Pareto:</h4>
+        <div style="display:flex;justify-content:space-around;margin-top:14px;">
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--success)" id="hemsCost">R$ 145,00/mês</div><div style="font-size:0.78rem;color:var(--muted)">Custo Estimado de Energia</div></div>
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--gold)" id="hemsDiscomfort">12%</div><div style="font-size:0.78rem;color:var(--muted)">Índice de Desconforto</div></div>
+        </div>
+      </div>
+      <script>
+      function runHems() {
+        const pref = document.getElementById('hemsPref').value;
+        if (pref === 'eco') {
+          document.getElementById('hemsCost').innerText = 'R$ 98,50/mês (-35%)';
+          document.getElementById('hemsDiscomfort').innerText = '28% (Horário flexível)';
+        } else if (pref === 'comf') {
+          document.getElementById('hemsCost').innerText = 'R$ 210,00/mês';
+          document.getElementById('hemsDiscomfort').innerText = '2% (Conforto Máximo)';
+        } else {
+          document.getElementById('hemsCost').innerText = 'R$ 145,00/mês (-18%)';
+          document.getElementById('hemsDiscomfort').innerText = '12% (Equilibrado)';
+        }
+      }
+      </script>
+    
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div id="quiz" class="tab-content">
+    <div class="card">
+      <div class="card-title">📝 Quiz de Fixação (Aula 8)</div>
+      <p><b>1. Qual o objetivo central da Aula 8?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Aplicação de conceitos avançados de inteligência e automação em Smart Grids.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Desligamento manual sem supervisão.</button>
+
+      <br>
+      <p><b>2. Como este método contribui para a operação do sistema de potência?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Minimizando perdas, acelerando a restauração e garantindo alta confiabilidade.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Aumentando os custos operacionais.</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: FLASHCARDS -->
+  <div id="flashcards" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎴 Flashcards da Aula 8 (Clique para virar)</div>
+      <div class="flashcard-grid">
+        <div class="flashcard" onclick="flipCard(this)" data-back="Integração de sensores, automação e inteligência em redes elétricas.">
+          <b>Smart Grid</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Técnica de otimização estocástica para resolução de problemas complexos.">
+          <b>Metaheurística</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Capacidade de adaptação e tomada de decisão automatizada no sistema.">
+          <b>Automação Digital</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setThemeFromParent(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function showSubTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+let isPodcastPlaying = false;
+let podSpeedRate = 1.15;
+
+function togglePodcastPlay() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não suporta a síntese de voz do Podcast.");
+    return;
+  }
+
+  if (isPodcastPlaying) {
+    window.speechSynthesis.cancel();
+    stopPodcastUI();
+  } else {
+    startPodcastSpeech();
+  }
+}
+
+function startPodcastSpeech() {
+  window.speechSynthesis.cancel();
+  const text = document.getElementById('podTranscript').innerText;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR';
+  u.rate = podSpeedRate;
+  u.pitch = 1.25;
+
+  u.onstart = () => {
+    isPodcastPlaying = true;
+    document.getElementById('podIcon').innerText = '⏸️';
+    document.getElementById('podBtnTxt').innerText = 'Pausar Podcast';
+    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
+  };
+
+  u.onend = () => { stopPodcastUI(); };
+  u.onerror = () => { stopPodcastUI(); };
+
+  window.speechSynthesis.speak(u);
+}
+
+function stopPodcastUI() {
+  isPodcastPlaying = false;
+  document.getElementById('podIcon').innerText = '▶️';
+  document.getElementById('podBtnTxt').innerText = 'Ouvir Podcast';
+  document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
+}
+
+function changePodcastSpeed(val) {
+  podSpeedRate = parseFloat(val);
+  if (isPodcastPlaying) startPodcastSpeech();
+}
+
+function checkQuiz(btn, isCorrect) {
+  if (isCorrect) {
+    btn.classList.add('correct');
+    alert('✨ Resposta Correta!');
+  } else {
+    btn.classList.add('wrong');
+    alert('❌ Tente novamente!');
+  }
+}
+
+function flipCard(card) {
+  if (card.classList.contains('flipped')) {
+    card.classList.remove('flipped');
+    card.innerHTML = `<b>${card.dataset.front || card.innerText}</b>`;
+  } else {
+    card.dataset.front = card.innerText;
+    card.classList.add('flipped');
+    card.innerText = card.dataset.back;
+  }
+}
+
+// ☀️/🌙 LIGHT & DARK THEME SYNC
+function setThemeFromParent(theme) {
+  if (theme === 'default' || !theme) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setThemeFromParent(savedTheme);
+</script>
+</body>
+</html>

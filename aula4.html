@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula 4: Otimização em Telecomunicações, PSO e ACO</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d; --surface: rgba(10, 14, 28, 0.9); --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.2); --accent: #ffb700; --gold: #ffb700; --success: #00ff66;
+  --text: #f1f5f9; --muted: #8a99ad; --accent-pink: #ff0055;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --gold: #d97706;
+  --success: #059669;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent-pink: #e11d48;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rajdhani', 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: all 0.3s; }
+.container { max-width: 1050px; margin: 0 auto; }
+
+.hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden; backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
+.hero-card::before { content: ''; position: absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--accent), var(--accent-pink)); }
+.title { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: var(--muted); font-size: 0.98rem; margin-bottom: 16px; font-weight: 500; }
+.badge-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', sans-serif; }
+
+/* PODCAST CARD STYLING */
+.podcast-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--success));
+}
+.podcast-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.podcast-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.podcast-controls { display: flex; align-items: center; gap: 10px; }
+
+.btn-podcast {
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #ffffff; padding: 10px 20px; border-radius: 12px; border: none;
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 0.88rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px var(--accent); transition: all 0.2s;
+}
+.btn-podcast:hover { transform: scale(1.04); }
+
+.podcast-speed { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 10px; font-family: inherit; font-size: 0.85rem; cursor: pointer; outline: none; }
+
+.eq-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; margin-left: 8px; }
+.eq-bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; transition: height 0.2s; }
+.eq-bar.playing { animation: eqBounce 0.4s infinite alternate; }
+.eq-bar:nth-child(1) { animation-delay: 0.0s; }
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.1s; }
+.eq-bar:nth-child(4) { animation-delay: 0.3s; }
+@keyframes eqBounce { 0% { height: 4px; } 100% { height: 16px; } }
+
+.podcast-transcript {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  font-size: 0.92rem; line-height: 1.6; color: var(--text); max-height: 120px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+}
+
+/* TABS */
+.tab-btns { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); border-color: var(--accent); }
+.tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CONTINUOUS READING CONTENT */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 20px; backdrop-filter: blur(15px); }
+.card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.content-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; transition: border-color 0.2s; }
+.content-block:hover { border-color: var(--accent); }
+.block-heading { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.block-list { margin-left: 20px; line-height: 1.7; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.block-list li { margin-bottom: 6px; }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+.control-box { display: flex; flex-direction: column; gap: 6px; }
+.control-box label { font-size: 0.8rem; font-weight: 700; color: var(--muted); font-family: 'Orbitron', sans-serif; }
+.control-box input, .control-box select { padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-family: inherit; }
+.btn-run { padding: 12px 20px; background: linear-gradient(135deg, var(--accent), var(--accent-pink)); color: #ffffff; border: none; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; letter-spacing: 1px; box-shadow: 0 0 20px var(--accent); }
+
+.sim-display { background: var(--surface2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); color: var(--text); }
+.quiz-opt { display: block; width: 100%; text-align: left; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 0.95rem; font-family: 'Rajdhani', sans-serif; font-weight: 600; transition: all 0.2s; }
+.quiz-opt:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+.quiz-opt.correct { background: rgba(0, 255, 102, 0.2); border-color: var(--success); }
+.quiz-opt.wrong { background: rgba(255, 0, 85, 0.2); border-color: var(--accent-pink); }
+
+.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; height: 140px; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.4s; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; }
+.flashcard.flipped { background: var(--accent); color: #ffffff; font-weight: 800; }
+
+/* EXPLICIT LIGHT MODE OVERRIDES FOR LESSONS */
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card, 
+[data-theme="light"] .hero-card, 
+[data-theme="light"] .podcast-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .content-block, 
+[data-theme="light"] .sim-controls, 
+[data-theme="light"] .sim-display, 
+[data-theme="light"] .quiz-opt, 
+[data-theme="light"] .flashcard, 
+[data-theme="light"] .podcast-transcript {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  color: #ffffff !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .btn-podcast, 
+[data-theme="light"] .btn-run {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0284c7, #e11d48) !important;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Hero Banner -->
+  <div class="hero-card">
+    <div class="badge-group">
+      <span class="badge">AULA 04</span>
+      <span class="badge">35 TÓPICOS DA AULA</span>
+      <span class="badge">PROF. HELDER / LABTEL</span>
+    </div>
+    <div class="title">Otimização em Telecomunicações, PSO e ACO</div>
+    <div class="subtitle">Texto teórico em leitura contínua, diagramas vetoriais SVG, podcast guiado com voz e ferramentas interativas.</div>
+  </div>
+
+  <!-- 🎙️ PODCAST CARD DA PROFESSORA BIA -->
+  <div class="podcast-card">
+    <div class="podcast-header">
+      <div class="podcast-title">
+        🎙️ PODCAST DA AULA 4 — PROFESSORA BIA
+        <div class="eq-bars">
+          <div class="eq-bar" id="eq1"></div>
+          <div class="eq-bar" id="eq2"></div>
+          <div class="eq-bar" id="eq3"></div>
+          <div class="eq-bar" id="eq4"></div>
+        </div>
+      </div>
+      <div class="podcast-controls">
+        <button class="btn-podcast" onclick="togglePodcastPlay()">
+          <span id="podIcon">▶️</span> <span id="podBtnTxt">Ouvir Podcast</span>
+        </button>
+        <select class="podcast-speed" id="podSpeed" onchange="changePodcastSpeed(this.value)">
+          <option value="1.0">1.0x</option>
+          <option value="1.15" selected>1.15x</option>
+          <option value="1.3">1.3x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+    </div>
+    <div class="podcast-transcript" id="podTranscript">
+Olá! No podcast da Aula 4, mergulhamos na Inteligência em Enxame! Estudamos o algoritmo PSO, que imita o vôo de bandos de pássaros, e o algoritmo ACO, baseado no comportamento de formigas reais, aplicados ao roteamento otimizado de dados de telemetria em redes PLC e cabos de fibra óptica OPGW.
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showSubTab('teoria')">📖 Conteúdo Teórico</button>
+    <button class="tab-btn" onclick="showSubTab('diagrama')">🎨 Diagrama Ilustrativo</button>
+    <button class="tab-btn" onclick="showSubTab('simulador')">⚡ Simulador Interativo</button>
+    <button class="tab-btn" onclick="showSubTab('quiz')">📝 Quiz</button>
+    <button class="tab-btn" onclick="showSubTab('flashcards')">🎴 Flashcards</button>
+  </div>
+
+  <!-- TAB 1: TEORIA CONTINUA -->
+  <div id="teoria" class="tab-content active">
+    <div class="card">
+      <div class="card-title">📖 Texto Acadêmico de Leitura Contínua</div>
+      <div class="content-block"><h3 class="block-heading">Disciplina: Tópicos Especiais em Eletrotécnica I / Smart Grid Departamento de Engenharia Elétrica Curso : Engenharia Elétrica Professor : Helder Roberto de Oliveira Rocha https://sites.google.com/site/helderrochaufes/</h3></div>
+<div class="content-block"><h3 class="block-heading">Optimization Problem for Minimum Total Costs for Smart Metering Systems</h3></div>
+<div class="content-block"><h3 class="block-heading">PMU and OPGW Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">Powerline Communication Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">Powerline Communication Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">Powerline Communication Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">Wireless Communication Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">Wireless Communication Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">Metaheuristicas</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Desenvolvida por James Kennedy (psicólogo) e Russell Eberhart (engenheiro), com base no comportamento de pássaros em revoadas modelado pelo biólogo Frank Heppner . Inspirado no comportamento e na dinâmica dos movimentos dos pássaros, insetos e peixes</h3><ul class="block-list"><li>Originalmente desenvolvido para problemas de otimização com variáveis contínuas</li></ul></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Elementos do algoritmo: A: população de agentes. xi: posição do agente Ai no espaço de soluções. f : função de avaliação. vi: velocidade do agente Ai. V(Ai): conjunto fixo de vizinhos do agente Ai. Todos os agentes estão conectados .</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Vantagens Insensível a mudança de escala das variáveis</h3><ul class="block-list"><li>Implementação simples</li><li>Adaptável a computadores paralelos</li><li>Não requer cálculo de derivadas</li><li>Poucos parâmetros para serem definidos</li><li>Bom para encontrar o mínimo global</li><li>Desvantagens Rápido para localizar de boas soluções, mas lento no ajuste fino .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Tem-se um conjunto de partículas que percorrem o espaço de busca apresentando comportamentos aleatórios em relação à individualidade e à sociabilidade. A individualidade de uma partícula está relacionada à ênfase dada, em seus movimentos, à melhor solução já encontrada por ela mesma, Sua sociabilidade reflete o grau de importância dado por ela à melhor solução já encontrada por seus vizinhos .</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Aplicações comuns: Extração de regras de RNAs</h3><ul class="block-list"><li>Escalonamento de tarefas (Multi-objective Job shop scheduling)</li><li>Roteamento de veículos (Capacitated Vehicle Routing)</li><li>Bandwidth Minimization Problem – BMP</li><li>Mineração de dados para tarefas de classificação .</li></ul></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Força a partícula a mover-se na mesma direção Tendência para seguir a própria direção com a mesma velocidade Atualização da velocidade 1. Termo de inércia 2. Termo cognitivo 3. Termo de aprendizado social Melhora o indivíduo Força a partícula a voltar a uma posição anterior que seja melhor do que a atual Tendência conservativa Força a partícula a seguir a direção de seus melhores vizinhos Como em todo rebanho , mas seguindo os melhores</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Idéia básica : comportamento cognitivo Qual a melhor direção ? comida: 1 comida: 2 comida: 3</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Idéia básica : comportamento social Um indivíduo adquire conhecimento dos demais membros do grupo pássaro 1 comida: 1 pássaro 2 comida: 3 pássaro 3 comida: 2 pássaro 4 comida: 4 Qual a melhor direção ?</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Atualização de velocidade e posição aprendizado social inércia cognitivo Para cada agente a i : i = wv i + c 1 .rand().(pbest i - x i ) + c 2 .rand().(gbest i - x i ) x i = x i + v i onde: pbest i é a melhor posição em que a partícula a i já esteve gbest i é a melhor posição em que algum vizinho de a i já esteve. w é o peso de inércia</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization Inicialize as partículas com posições aleatórias e velocidades nulas Calcular os valores fitness Compare os fitness com os melhores valores do indivíduo ( pbest ) e dos demais ( gbest ) O critério de parada está  satisfeito? Atualize velocidades e posições Início Fim SIM NÃO</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">PSO - Particle Swarm Optimization</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) É inspirada no comportamento das formigas, onde a comunicação é realizada através do feromônio . Elas escolham o caminho com maior quantidade de feromônio .</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) Ao caminhar, as formigas depositam no chão o feromônio , formando, deste modo, uma trilha de feromônios . As formigas sentem o cheiro do feromônio e escolhem o caminho com maior probabilidade, maior quantidade de feromônio (cheiro mais forte). A trilha ajuda a formiga a achar o caminho de volta e as outras formigas a encontrar a fonte de alimentos.</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO)</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) Formigas artificiais são heurísticas construtivas. Elas constroem soluções de forma probabilística utilizando duas informações: 1. A trilha de feromônio (artificial) que muda dinamicamente durante a execução do programa de modo a refletir a experiência já adquirida durante a busca. 2. A informação heurística especifica do problema a ser resolvido .</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO)</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) Procedimento Construtivo Cada formiga irá construir uma solução movendo-se de um nó i a um nó j escolhido probabilisticamente. Essa probabilidade vai depender do feromônio e da informação heurística inerente ao problema em questão .</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) A solução construída pela ACO é determinada pela probabilidade de seleção, definida como:</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) Procedimento Atualização das Estatísticas Procedimento que salva a melhor solução encontrada até a iteração corrente ;</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) Atualização da trilha de feromônio : A forma de atualização da trilha de feromônio afeta a escolha das formigas. Existem diversas formas de atualização da trilha, a mais usada é a forma clássica.</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) Sensibilidade à trilha de feromônio A trilha de feromônio representa a experiência de busca adquirida pelas formigas. Quando a sensibilidade é elevada, as soluções construídas são muito próximas. Quando a sensibilidade é pequena, a construção das soluções é mais diversificada .</h3></div>
+<div class="content-block"><h3 class="block-heading">Colônia de Formigas (ACO) Sensibilidade às informações heurísticas: A trilha de feromônio reflete a experiência de busca, mas não contém nenhuma informação referente ao problema. Para contornar esse fato, as formigas têm  sensibilidade heurísticas. São informações sobre o problema a ser solucionado. A função das informações heurísticas é forçar as formigas a construir soluções boas para o problema.</h3></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGRAMA SVG -->
+  <div id="diagrama" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎨 Diagrama Vetorial Explicativo (Aula 4)</div>
+      
+    <svg viewBox="0 0 800 220" style="width:100%;height:auto;background:var(--surface2);border-radius:14px;border:1px solid var(--border);padding:10px;">
+      <text x="400" y="25" text-anchor="middle" fill="var(--gold)" font-weight="bold" font-size="14" font-family="Orbitron">OTIMIZAÇÃO EM ENXAME (PSO & ACO) PARA ROTEAMENTO DE DADOS</text>
+      <circle cx="120" cy="80" r="10" fill="var(--accent)"/>
+      <text x="120" y="105" text-anchor="middle" fill="var(--accent)" font-size="11">Partícula 1</text>
+      <circle cx="150" cy="160" r="10" fill="var(--accent)"/>
+      <text x="150" y="185" text-anchor="middle" fill="var(--accent)" font-size="11">Partícula 2</text>
+      <circle cx="400" cy="90" r="12" fill="var(--gold)"/>
+      <text x="400" y="70" text-anchor="middle" fill="var(--gold)" font-weight="bold" font-size="11">pbest (Melhor Individual)</text>
+      <circle cx="680" cy="120" r="16" fill="var(--success)"/>
+      <text x="680" y="155" text-anchor="middle" fill="var(--success)" font-weight="bold" font-size="12">gbest (Global Best / SCADA)</text>
+      <path d="M 130 80 Q 260 50 388 90" stroke="var(--accent)" stroke-width="2" fill="none" stroke-dasharray="4,4"/>
+      <path d="M 412 90 Q 540 100 664 120" stroke="var(--gold)" stroke-width="3" fill="none"/>
+      <text x="400" y="200" text-anchor="middle" fill="var(--muted)" font-size="11">Partículas convergem para o nó de menor latência e custo via atração social e cognitiva</text>
+    </svg>
+    
+    </div>
+  </div>
+
+  <!-- TAB 3: SIMULADOR -->
+  <div id="simulador" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Simulador Interativo — Aula 4</div>
+      
+      <div class="sim-controls">
+        <div class="control-box"><label>Algoritmo:</label><select id="swarmAlg"><option value="pso">PSO (Particle Swarm Optimization)</option><option value="aco">ACO (Ant Colony Optimization)</option></select></div>
+        <div class="control-box"><label>Coeficiente Cognitivo (c1):</label><input type="number" id="swC1" value="2.0" step="0.1"></div>
+        <div class="control-box"><label>Coeficiente Social (c2):</label><input type="number" id="swC2" value="2.0" step="0.1"></div>
+      </div>
+      <button class="btn-run" onclick="runSwarm()">⚡ Simular Roteamento em Tempo Real</button>
+      <div class="sim-display" style="margin-top:20px;">
+        <h4 style="color:var(--gold);margin-bottom:8px;" id="swarmStatus">Status do Roteamento: Pronto</h4>
+        <div style="display:flex;justify-content:space-around;margin-top:14px;">
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--accent)" id="swLatency">12 ms</div><div style="font-size:0.78rem;color:var(--muted)">Latência de Rede</div></div>
+          <div><div style="font-size:1.6rem;font-weight:800;color:var(--success)" id="swLoss">0.01%</div><div style="font-size:0.78rem;color:var(--muted)">Perda de Pacotes</div></div>
+        </div>
+      </div>
+      <script>
+      function runSwarm() {
+        const alg = document.getElementById('swarmAlg').value;
+        const c1 = parseFloat(document.getElementById('swC1').value);
+        const c2 = parseFloat(document.getElementById('swC2').value);
+        const lat = Math.max(5, Math.round(25 / (c1 + c2)));
+        document.getElementById('swarmStatus').innerText = `⚡ Roteamento Convergido via ${alg.toUpperCase()}!`;
+        document.getElementById('swLatency').innerText = `${lat} ms`;
+        document.getElementById('swLoss').innerText = `${(0.05 / (c1 * 0.5 + c2 * 0.5)).toFixed(3)}%`;
+      }
+      </script>
+    
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div id="quiz" class="tab-content">
+    <div class="card">
+      <div class="card-title">📝 Quiz de Fixação (Aula 4)</div>
+      <p><b>1. Qual o objetivo central da Aula 4?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Aplicação de conceitos avançados de inteligência e automação em Smart Grids.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Desligamento manual sem supervisão.</button>
+
+      <br>
+      <p><b>2. Como este método contribui para a operação do sistema de potência?</b></p>
+      <button class="quiz-opt" onclick="checkQuiz(this, true)">A) Minimizando perdas, acelerando a restauração e garantindo alta confiabilidade.</button>
+      <button class="quiz-opt" onclick="checkQuiz(this, false)">B) Aumentando os custos operacionais.</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: FLASHCARDS -->
+  <div id="flashcards" class="tab-content">
+    <div class="card">
+      <div class="card-title">🎴 Flashcards da Aula 4 (Clique para virar)</div>
+      <div class="flashcard-grid">
+        <div class="flashcard" onclick="flipCard(this)" data-back="Integração de sensores, automação e inteligência em redes elétricas.">
+          <b>Smart Grid</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Técnica de otimização estocástica para resolução de problemas complexos.">
+          <b>Metaheurística</b>
+        </div>
+        <div class="flashcard" onclick="flipCard(this)" data-back="Capacidade de adaptação e tomada de decisão automatizada no sistema.">
+          <b>Automação Digital</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setThemeFromParent(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+function showSubTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+let isPodcastPlaying = false;
+let podSpeedRate = 1.15;
+
+function togglePodcastPlay() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não suporta a síntese de voz do Podcast.");
+    return;
+  }
+
+  if (isPodcastPlaying) {
+    window.speechSynthesis.cancel();
+    stopPodcastUI();
+  } else {
+    startPodcastSpeech();
+  }
+}
+
+function startPodcastSpeech() {
+  window.speechSynthesis.cancel();
+  const text = document.getElementById('podTranscript').innerText;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR';
+  u.rate = podSpeedRate;
+  u.pitch = 1.25;
+
+  u.onstart = () => {
+    isPodcastPlaying = true;
+    document.getElementById('podIcon').innerText = '⏸️';
+    document.getElementById('podBtnTxt').innerText = 'Pausar Podcast';
+    document.querySelectorAll('.eq-bar').forEach(b => b.classList.add('playing'));
+  };
+
+  u.onend = () => { stopPodcastUI(); };
+  u.onerror = () => { stopPodcastUI(); };
+
+  window.speechSynthesis.speak(u);
+}
+
+function stopPodcastUI() {
+  isPodcastPlaying = false;
+  document.getElementById('podIcon').innerText = '▶️';
+  document.getElementById('podBtnTxt').innerText = 'Ouvir Podcast';
+  document.querySelectorAll('.eq-bar').forEach(b => b.classList.remove('playing'));
+}
+
+function changePodcastSpeed(val) {
+  podSpeedRate = parseFloat(val);
+  if (isPodcastPlaying) startPodcastSpeech();
+}
+
+function checkQuiz(btn, isCorrect) {
+  if (isCorrect) {
+    btn.classList.add('correct');
+    alert('✨ Resposta Correta!');
+  } else {
+    btn.classList.add('wrong');
+    alert('❌ Tente novamente!');
+  }
+}
+
+function flipCard(card) {
+  if (card.classList.contains('flipped')) {
+    card.classList.remove('flipped');
+    card.innerHTML = `<b>${card.dataset.front || card.innerText}</b>`;
+  } else {
+    card.dataset.front = card.innerText;
+    card.classList.add('flipped');
+    card.innerText = card.dataset.back;
+  }
+}
+
+// ☀️/🌙 LIGHT & DARK THEME SYNC
+function setThemeFromParent(theme) {
+  if (theme === 'default' || !theme) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setThemeFromParent(savedTheme);
+</script>
+</body>
+</html>

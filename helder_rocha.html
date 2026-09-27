@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prof. Dr. Helder Roberto de Oliveira Rocha — Página Principal & Perfil Acadêmico</title>
+<script>
+(function() {
+  const t = localStorage.getItem('sg_theme');
+  if (t && t !== 'default') {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050d;
+  --surface: rgba(10, 14, 28, 0.92);
+  --surface2: rgba(18, 24, 48, 0.95);
+  --border: rgba(0, 243, 255, 0.25);
+  --border-glow: rgba(0, 243, 255, 0.6);
+  --accent: #00f3ff;
+  --accent-pink: #ff0055;
+  --accent-purple: #9d4edd;
+  --gold: #ffb700;
+  --text: #f1f5f9;
+  --muted: #8a99ad;
+  --success: #00ff66;
+  --radius: 20px;
+  --glass-blur: blur(25px);
+  --primary-glow: rgba(0, 243, 255, 0.35);
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: rgba(255, 255, 255, 0.96);
+  --surface2: #f1f5f9;
+  --border: rgba(2, 132, 199, 0.25);
+  --accent: #0284c7;
+  --accent-pink: #e11d48;
+  --accent-purple: #7c3aed;
+  --gold: #d97706;
+  --text: #0f172a;
+  --muted: #475569;
+  --success: #059669;
+  --primary-glow: rgba(2, 132, 199, 0.2);
+}
+
+[data-theme="light"] .scanline { display: none !important; }
+[data-theme="light"] .avatar-inner { background: #ffffff; color: #0284c7; }
+[data-theme="light"] .btn-mode-toggle { color: #ffffff; background: linear-gradient(135deg, #0284c7, #7c3aed); }
+[data-theme="light"] .btn-lesson-quick:hover { color: #ffffff; background: linear-gradient(135deg, #0284c7, #7c3aed); }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.6;
+}
+
+#bgCanvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.scanline { position: fixed; inset: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%); background-size: 100% 4px; z-index: 999; pointer-events: none; opacity: 0.15; }
+
+/* HEADER HUD */
+header {
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+.brand-wrapper { display: flex; align-items: center; gap: 16px; }
+.brand-icon {
+  width: 46px; height: 46px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; color: #000; font-weight: 900;
+  box-shadow: 0 0 20px var(--primary-glow);
+}
+.brand-title {
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.3rem;
+  background: linear-gradient(90deg, var(--accent), var(--text));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.brand-subtitle { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.btn-header {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 12px; padding: 10px 18px; cursor: pointer;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  transition: all 0.25s ease;
+}
+.btn-header:hover {
+  border-color: var(--accent); box-shadow: 0 0 20px var(--primary-glow); transform: translateY(-2px);
+}
+.btn-mode-toggle {
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  color: #000; border: none; font-family: 'Orbitron', sans-serif; font-weight: 800;
+}
+.btn-lattes {
+  background: linear-gradient(135deg, var(--gold), #ff8800);
+  color: #000; border: none; font-family: 'Orbitron', sans-serif; font-weight: 800;
+  box-shadow: 0 0 20px rgba(255, 183, 0, 0.4);
+}
+
+/* CONTAINER */
+.main-container {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 24px 60px 24px;
+}
+
+/* HERO SECTION */
+.hero-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 36px;
+  align-items: center;
+  box-shadow: 0 0 50px rgba(0, 243, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+.hero-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-pink), var(--gold));
+}
+
+.profile-avatar-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.avatar-ring {
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple), var(--gold));
+  padding: 4px;
+  box-shadow: 0 0 35px var(--primary-glow);
+  animation: pulseGlow 4s infinite alternate;
+}
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 25px var(--primary-glow); }
+  100% { box-shadow: 0 0 50px var(--accent-purple); }
+}
+.avatar-inner {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: var(--surface2);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3.8rem; font-weight: 900;
+  color: var(--accent);
+  border: 3px solid var(--bg);
+}
+
+.hero-info h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.hero-title-badge {
+  display: inline-block;
+  background: rgba(0, 243, 255, 0.1);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.hero-bio {
+  font-size: 1.05rem;
+  color: var(--text);
+  opacity: 0.9;
+  margin-bottom: 24px;
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.tag-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.tag-badge b { color: var(--gold); }
+
+.hero-cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* GRID SECTIONS */
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+.stat-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 30px var(--primary-glow);
+}
+.stat-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.stat-lbl {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* RESEARCH GRID */
+.research-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+.research-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.research-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 25px var(--primary-glow);
+  transform: translateY(-4px);
+}
+.card-icon {
+  font-size: 2.2rem;
+  margin-bottom: 14px;
+}
+.card-h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.card-p {
+  font-size: 0.95rem;
+  color: var(--muted);
+  flex: 1;
+  line-height: 1.6;
+}
+
+/* LINK CARDS */
+.links-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  margin-bottom: 40px;
+}
+.link-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+.official-link-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
+}
+.official-link-card:hover {
+  border-color: var(--accent);
+  transform: translateX(6px);
+  box-shadow: 0 0 20px var(--primary-glow);
+}
+.link-icon-box {
+  width: 50px; height: 50px;
+  border-radius: 12px;
+  background: rgba(0, 243, 255, 0.1);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.link-details-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.link-details-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* DISCIPLINE PORTAL CARD */
+.discipline-banner {
+  background: linear-gradient(135deg, rgba(0, 243, 255, 0.1), rgba(157, 78, 221, 0.15));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 0 40px var(--primary-glow);
+}
+.discipline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.discipline-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text);
+}
+.lesson-quick-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.btn-lesson-quick {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+.btn-lesson-quick:hover {
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  color: #000;
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+footer {
+  text-align: center;
+  padding: 30px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 60px;
+  background: var(--surface);
+}
+
+@media (max-width: 768px) {
+  .hero-card { grid-template-columns: 1fr; text-align: center; }
+  .profile-avatar-container { margin-bottom: 10px; }
+  .hero-tags, .hero-cta-group { justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+<canvas id="bgCanvas"></canvas>
+
+<!-- HEADER HUD -->
+<header>
+  <div class="brand-wrapper">
+    <div class="brand-icon">👨‍🏫</div>
+    <div>
+      <div class="brand-title">PROF. DR. HELDER ROCHA</div>
+      <div class="brand-subtitle">UFES • Centro Tecnológico • Departamento de Engenharia Elétrica</div>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <!-- LATTES LINK BUTTON -->
+    <a href="https://lattes.cnpq.br/8801325729735529" target="_blank" class="btn-header btn-lattes">
+      📜 Currículo Lattes
+    </a>
+    
+    <!-- LINK TO SMART GRIDS COURSE -->
+    <a href="index.html" class="btn-header">
+      ⚡ Smart Grids
+    </a>
+
+    <!-- LIGHT / DARK MODE TOGGLE BUTTON -->
+    <button class="btn-header btn-mode-toggle" id="modeToggleBtn" onclick="toggleLightDarkMode()">
+      <span id="modeIcon">☀️</span> <span id="modeText">Modo Claro</span>
+    </button>
+  </div>
+</header>
+
+<div class="main-container">
+
+  <!-- HERO PROFILE CARD -->
+  <div class="hero-card">
+    <div class="profile-avatar-container">
+      <div class="avatar-ring">
+        <div class="avatar-inner">
+          HR
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-info">
+      <span class="hero-title-badge">PROFESSOR ADJUNTO IV • UFES / DEE / LABTEL</span>
+      <h1>Prof. Dr. Helder Roberto de Oliveira Rocha</h1>
+      <p class="hero-bio">
+        Docente e Pesquisador do <b>Departamento de Engenharia Elétrica (DEE)</b> do Centro Tecnológico da <b>Universidade Federal do Espírito Santo (UFES)</b>. Atua no <b>Laboratório de Telecomunicações (LABTEL)</b> desenvolvendo pesquisas avançadas em <b>Smart Grids (Redes Elétricas Inteligentes)</b>, inteligência computacional, otimização metaheurística e inteligência artificial aplicada à energia.
+      </p>
+
+      <div class="hero-tags">
+        <div class="tag-badge">🏅 <b>Bolsista PQ - CNPq</b></div>
+        <div class="tag-badge">📡 <b>Pesquisador LABTEL</b></div>
+        <div class="tag-badge">🎓 <b>Doutor em Engenharia Elétrica</b></div>
+        <div class="tag-badge">⚡ <b>Especialista em Smart Grids</b></div>
+      </div>
+
+      <div class="hero-cta-group">
+        <a href="https://lattes.cnpq.br/8801325729735529" target="_blank" class="btn-header btn-lattes" style="padding: 12px 24px; font-size: 1rem;">
+          📜 Acessar Currículo Lattes CNPq
+        </a>
+        <a href="https://sites.google.com/site/helderrochaufes/" target="_blank" class="btn-header" style="padding: 12px 24px; font-size: 1rem;">
+          🌐 Website Pessoal Google Sites
+        </a>
+        <button onclick="goToDisciplina()" class="btn-header" style="padding: 12px 24px; font-size: 1rem; border-color: var(--accent); color: var(--accent); cursor: pointer; background: var(--surface2);">
+          ⚡ Entrar na Disciplina Smart Grid
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIGHLIGHT METRICS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val">PQ</div>
+      <div class="stat-lbl">Bolsista Produtividade CNPq</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">UFES</div>
+      <div class="stat-lbl">Departamento de Eng. Elétrica</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">LABTEL</div>
+      <div class="stat-lbl">Laboratório de Telecomunicações</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">10+</div>
+      <div class="stat-lbl">Aulas Interativas & IA no Portal</div>
+    </div>
+  </div>
+
+  <!-- RESEARCH AREAS -->
+  <div class="section-title">
+    🔬 Áreas de Pesquisa & Especialidades
+  </div>
+
+  <div class="research-grid">
+    <div class="research-card">
+      <div class="card-icon">⚡</div>
+      <div class="card-h3">Smart Grids & Infraestrutura AMI</div>
+      <div class="card-p">
+        Modelagem, automação self-healing, microrredes (Microgrids), usinas virtuais (VPP) e otimização da infraestrutura de medição avançada (AMI) em sistemas elétricos modernos.
+      </div>
+    </div>
+
+    <div class="research-card">
+      <div class="card-icon">🧬</div>
+      <div class="card-h3">Algoritmos Genéticos & Evolução Diferencial</div>
+      <div class="card-p">
+        Desenvolvimento de metaheurísticas de otimização combinatória e contínua para alocação ótima de PMUs, minimização de perdas técnicas e reconfiguração de sistemas de distribuição.
+      </div>
+    </div>
+
+    <div class="research-card">
+      <div class="card-icon">🐝</div>
+      <div class="card-h3">Inteligência de Enxame (PSO & ACO)</div>
+      <div class="card-p">
+        Otimização baseada em comportamento de enxame de partículas e colônia de formigas aplicada ao roteamento eficiente de redes de telecomunicações elétricas (PLC, OPGW, 5G).
+      </div>
+    </div>
+
+    <div class="research-card">
+      <div class="card-icon">📊</div>
+      <div class="card-h3">Estimação de Estado WLS & Sinais</div>
+      <div class="card-p">
+        Algoritmos robustos de Mínimos Quadrados Ponderados (WLS) para estimadores estáticos de estado, detecção e eliminação de maus dados nas medições de redes elétricas.
+      </div>
+    </div>
+
+    <div class="research-card">
+      <div class="card-icon">🤖</div>
+      <div class="card-h3">Deep Learning & Machine Learning</div>
+      <div class="card-p">
+        Aplicação de redes neurais profundas (LSTM, CNN) para Previsão de Carga de Curto Prazo (STLF), detecção de perdas não-técnicas (roubo de energia) e gerenciamento de Smart Homes.
+      </div>
+    </div>
+
+    <div class="research-card">
+      <div class="card-icon">🌐</div>
+      <div class="card-h3">Big Data Science & Telecomunicações</div>
+      <div class="card-p">
+        Processamento de grande volume, velocidade e variedade de dados (5 V's do Big Data) com arquiteturas distribuídas no Laboratório de Telecomunicações (LABTEL/UFES).
+      </div>
+    </div>
+  </div>
+
+  <!-- OFFICIAL LINKS SECTION -->
+  <div class="links-section">
+    <div class="section-title">
+      🔗 Links Oficiais & Canais de Acesso
+    </div>
+
+    <div class="link-list">
+      <!-- LATTES -->
+      <a href="https://lattes.cnpq.br/8801325729735529" target="_blank" class="official-link-card">
+        <div class="link-icon-box">📜</div>
+        <div>
+          <div class="link-details-title">Currículo Lattes (CNPq)</div>
+          <div class="link-details-sub">http://lattes.cnpq.br/8801325729735529</div>
+        </div>
+      </a>
+
+      <!-- GOOGLE SITES -->
+      <a href="https://sites.google.com/site/helderrochaufes/" target="_blank" class="official-link-card">
+        <div class="link-icon-box">🌐</div>
+        <div>
+          <div class="link-details-title">Website Pessoal (Google Sites)</div>
+          <div class="link-details-sub">https://sites.google.com/site/helderrochaufes/</div>
+        </div>
+      </a>
+
+      <!-- DEE UFES -->
+      <a href="https://eletrical.ufes.br/" target="_blank" class="official-link-card">
+        <div class="link-icon-box">🏫</div>
+        <div>
+          <div class="link-details-title">Deptº de Engenharia Elétrica (DEE/UFES)</div>
+          <div class="link-details-sub">Centro Tecnológico - UFES Vitória/ES</div>
+        </div>
+      </a>
+
+      <!-- LABTEL -->
+      <a href="http://www.telecom.ufes.br/" target="_blank" class="official-link-card">
+        <div class="link-icon-box">📡</div>
+        <div>
+          <div class="link-details-title">Laboratório de Telecomunicações (LABTEL)</div>
+          <div class="link-details-sub">Pesquisa e Inovação Tecnológica em Engenharia</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- DISCIPLINE & PORTAL CONTAINER -->
+  <div class="discipline-banner">
+    <div class="discipline-header">
+      <div>
+        <span class="hero-title-badge" style="margin-bottom:6px;">DISCIPLINA DE GRADUAÇÃO / PÓS-GRADUAÇÃO</span>
+        <div class="discipline-title">Tópicos Especiais em Eletrotécnica I — Smart Grid</div>
+        <p style="color:var(--muted); margin-top: 4px;">Acesse o portal futurista do curso com 10 aulas completas, podcasts narrados pela Professora Bia e simuladores virtuais.</p>
+      </div>
+      <button onclick="goToDisciplina()" class="btn-header btn-mode-toggle" style="padding:14px 28px; font-size:1rem; cursor:pointer;">
+        🚀 ACESSAR DISCIPLINA SMART GRID (10 AULAS)
+      </button>
+    </div>
+
+    <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 10px;">
+      <div style="font-family:'Orbitron',sans-serif; font-size:0.9rem; font-weight:700; color:var(--accent); margin-bottom:12px;">
+        ⚡ ATALHO RÁPIDO PARA AS AULAS DO CURSO:
+      </div>
+      <div class="lesson-quick-buttons">
+        <button onclick="goToAula(1)" class="btn-lesson-quick" style="cursor:pointer;">01. Introdução SG</button>
+        <button onclick="goToAula(2)" class="btn-lesson-quick" style="cursor:pointer;">02. Algoritmos Genéticos</button>
+        <button onclick="goToAula(3)" class="btn-lesson-quick" style="cursor:pointer;">03. Evolução Diferencial</button>
+        <button onclick="goToAula(4)" class="btn-lesson-quick" style="cursor:pointer;">04. PSO & ACO</button>
+        <button onclick="goToAula(5)" class="btn-lesson-quick" style="cursor:pointer;">05. Estimação de Estado</button>
+        <button onclick="goToAula(6)" class="btn-lesson-quick" style="cursor:pointer;">06. Operação BT & RS</button>
+        <button onclick="goToAula(7)" class="btn-lesson-quick" style="cursor:pointer;">07. Microgrids & VPP</button>
+        <button onclick="goToAula(8)" class="btn-lesson-quick" style="cursor:pointer;">08. Smart Home & NSGA</button>
+        <button onclick="goToAula(9)" class="btn-lesson-quick" style="cursor:pointer;">09. Deep Learning</button>
+        <button onclick="goToAula(10)" class="btn-lesson-quick" style="cursor:pointer;">10. Big Data Science</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p><b>Prof. Dr. Helder Roberto de Oliveira Rocha</b> • Universidade Federal do Espírito Santo (UFES)</p>
+  <p style="font-size:0.8rem; margin-top:6px; color:var(--muted)">Centro Tecnológico • Departamento de Engenharia Elétrica • LABTEL</p>
+</footer>
+
+<script>
+// NAVIGATION TO PARENT LESSONS
+function goToAula(num) {
+  if (window.parent && typeof window.parent.loadAula === 'function') {
+    window.parent.loadAula(num);
+  } else {
+    window.location.href = `index.html#aula${num}`;
+  }
+}
+
+function goToDisciplina() {
+  goToAula(1);
+}
+
+// ☀️/🌙 LIGHT & DARK MODE TOGGLE SYSTEM
+let isLightMode = false;
+
+function toggleLightDarkMode() {
+  isLightMode = !isLightMode;
+  const themeName = isLightMode ? 'light' : 'default';
+  setTheme(themeName);
+  updateModeBtnUI();
+}
+
+function updateModeBtnUI() {
+  const btn = document.getElementById('modeToggleBtn');
+  const icon = document.getElementById('modeIcon');
+  const text = document.getElementById('modeText');
+  if (isLightMode) {
+    icon.innerText = '🌙';
+    text.innerText = 'Modo Escuro';
+  } else {
+    icon.innerText = '☀️';
+    text.innerText = 'Modo Claro';
+  }
+}
+
+function setTheme(theme) {
+  if (theme === 'default') {
+    document.documentElement.removeAttribute('data-theme');
+    isLightMode = false;
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+    isLightMode = (theme === 'light');
+  }
+  localStorage.setItem('sg_theme', theme);
+  updateModeBtnUI();
+}
+
+const savedTheme = localStorage.getItem('sg_theme');
+if (savedTheme) setTheme(savedTheme);
+
+// CANVAS ANIMATION
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let nodes = [];
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initNodes(); }
+window.addEventListener('resize', resizeCanvas);
+
+function initNodes() {
+  nodes = [];
+  const count = Math.floor((canvas.width * canvas.height) / 18000);
+  for (let i = 0; i < count; i++) {
+    nodes.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.8, vy: (Math.random() - 0.5) * 0.8, radius: Math.random() * 2 + 1 });
+  }
+}
+
+function animateCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00f3ff';
+  for (let i = 0; i < nodes.length; i++) {
+    let n = nodes[i];
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+    if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2); ctx.fillStyle = accentColor; ctx.shadowBlur = 8; ctx.shadowColor = accentColor; ctx.fill();
+    for (let j = i + 1; j < nodes.length; j++) {
+      let n2 = nodes[j]; let dist = Math.hypot(n.x - n2.x, n.y - n2.y);
+      if (dist < 150) {
+        ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n2.x, n2.y); ctx.strokeStyle = accentColor; ctx.globalAlpha = (1 - dist / 150) * 0.25; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+    }
+  }
+  requestAnimationFrame(animateCanvas);
+}
+resizeCanvas(); animateCanvas();
+</script>
+</body>
+</html>
