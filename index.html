@@ -564,12 +564,31 @@ function sendBiaMsg() {
   }, 500);
 }
 
+function getFemaleVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
+  const ptVoices = voices.filter(v => v.lang.startsWith('pt'));
+  const femalePtVoice = ptVoices.find(v => 
+    /female|mulher|maria|francisca|helena|vitoria|vitória|luciana|fernanda|leticia|letícia|camila|raquel|joana|yolda|google português/i.test(v.name)
+  );
+  if (femalePtVoice) return femalePtVoice;
+  if (ptVoices.length > 0) return ptVoices[0];
+  const anyFemale = voices.find(v => /female|mulher|maria|helena|luciana/i.test(v.name));
+  return anyFemale || null;
+}
+
 function speakBiaText(text) {
   if (isBiaMuted || !('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'pt-BR';
   u.rate = 1.1;
+  u.pitch = 1.3;
+
+  const femaleVoice = getFemaleVoice();
+  if (femaleVoice) u.voice = femaleVoice;
+
   window.speechSynthesis.speak(u);
 }
 
@@ -596,15 +615,6 @@ function getBiaKnowledgeResponse(q) {
   } else {
     return `Excelente pergunta! Na disciplina de Smart Grids do Prof. Helder, abordamos esse tema com inteligência computacional. Você pode ouvir o podcast narrado na aba da aula correspondente!`;
   }
-}
-
-function speakBiaText(text) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'pt-BR';
-  u.rate = 1.1;
-  window.speechSynthesis.speak(u);
 }
 
 // CANVAS
